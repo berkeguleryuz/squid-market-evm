@@ -251,7 +251,7 @@ export default function Home() {
 
       <div
         ref={headerImageRef}
-        className="absolute bottom-0 left-0 w-full h-120 2xl:h-160 rounded-t-[200px] border-t-2 border-white/50 shadow-[0_0_140px_rgba(255,255,255,0.5)] overflow-hidden">
+        className="absolute bottom-0 left-0 w-full h-120 2xl:h-160 rounded-t-[200px] border-t-2 border-white/50 shadow-[0_0_100px_rgba(255,255,255,0.5)] overflow-hidden">
         <Image
           src="/squidheader.jpg"
           alt="Squid Header"
