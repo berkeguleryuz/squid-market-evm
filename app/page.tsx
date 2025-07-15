@@ -170,8 +170,7 @@ export default function Home() {
                 Join Squid Market Waitlist
               </DialogTitle>
               <p className="text-gray-300 text-sm font-rajdhani">
-                Be the first to access exclusive squid collectibles and trading
-                opportunities.
+                Be the first to access of Squid Market.
               </p>
             </DialogHeader>
 

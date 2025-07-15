@@ -27,7 +27,7 @@ const rajdhani = Rajdhani({
 export const metadata: Metadata = {
   title: "Squid Market - Exclusive NFT Marketplace",
   description:
-    "Join the exclusive squid collectibles marketplace. Get early access to rare NFTs and trading opportunities.",
+    "Join the exclusive marketplace experience for Squid Market.",
 };
 
 export default function RootLayout({
