@@ -124,8 +124,8 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2xl mx-auto px-6 text-center py-20">
+    <div className="min-h-screen bg-black text-white relative">
+      <div className="max-w-2xl mx-auto px-6 text-center py-20 relative z-10">
         <div ref={logoRef} className="mb-8">
           <Image
             src="/squidlogo.jpg"
@@ -251,12 +251,12 @@ export default function Home() {
 
       <div
         ref={headerImageRef}
-        className="w-full h-120 relative mt-12 rounded-tl-full">
+        className="absolute bottom-0 left-0 w-full h-120 2xl:h-160 rounded-tr-[200px] rounded-tl-[200px] border-t-2 border-white/50 shadow-[0_0_140px_rgba(255,255,255,0.5)] overflow-hidden">
         <Image
           src="/squidheader.jpg"
           alt="Squid Header"
           fill
-          className="object-fit object-cover rounded-tr-[200px] rounded-tl-[200px]"
+          className="lg:object-fit lg:object-cover object-left object-cover"
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-t from-transparent to-black opacity-70" />
