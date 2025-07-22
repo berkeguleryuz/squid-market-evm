@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Exo_2, Rajdhani } from "next/font/google";
 import "./globals.css";
+import { Providers } from "@/components/providers";
+import { Header } from "@/components/header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,8 +28,7 @@ const rajdhani = Rajdhani({
 
 export const metadata: Metadata = {
   title: "Squid Market - Exclusive NFT Marketplace",
-  description:
-    "Join the exclusive marketplace experience for Squid Market.",
+  description: "Join the exclusive marketplace experience for Squid Market.",
 };
 
 export default function RootLayout({
@@ -38,9 +39,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`bg-black ${geistSans.variable} ${geistMono.variable} ${exo2.variable} ${rajdhani.variable} antialiased`}
+        className={`bg-black text-white ${geistSans.variable} ${geistMono.variable} ${exo2.variable} ${rajdhani.variable} antialiased`}
         suppressHydrationWarning>
-        {children}
+        <Providers>
+          <Header />
+          {children}
+        </Providers>
       </body>
     </html>
   );
