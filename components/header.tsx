@@ -18,11 +18,11 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 
 const navigation = [
-  { name: "Marketplace", href: "/marketplace" },
-  { name: "Launchpad", href: "/launchpad" },
-  { name: "My NFTs", href: "/my-nfts" },
-  { name: "Create", href: "/create" },
-  { name: "Test Contracts", href: "/test-contracts" },
+  { name: "Marketplace", href: "/application/marketplace" },
+  { name: "Launchpad", href: "/application/launchpad" },
+  { name: "My NFTs", href: "/application/my-nfts" },
+  { name: "Create", href: "/application/create" },
+  { name: "Test Contracts", href: "/application/test-contracts" },
 ];
 
 export function Header() {
@@ -131,7 +131,7 @@ export function Header() {
                         My NFTs
                       </button>
                       <button
-                        onClick={() => handleNavClick("/create")}
+                        onClick={() => handleNavClick("/application/create")}
                         className="flex items-center w-full px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors">
                         <Settings className="h-4 w-4 mr-3" />
                         Create NFT
