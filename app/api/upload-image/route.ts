@@ -36,17 +36,17 @@ export async function POST(request: NextRequest) {
 
     // For now, we'll use a simple approach with Pinata
     // You'll need to add PINATA_JWT to your .env.local file
-    const pinataJWT = process.env.NEXT_PUBLIC_PINATA_JWT;
+    const pinataJWT = process.env.PINATA_JWT;
     
     if (!pinataJWT) {
       // Fallback: return a placeholder URL for development
-      console.warn('⚠️ NEXT_PUBLIC_PINATA_JWT not found, using placeholder');
+      console.warn('⚠️ PINATA_JWT not found, using placeholder');
       const placeholderUrl = `https://via.placeholder.com/400x400?text=${encodeURIComponent(file.name)}`;
       
       return NextResponse.json({
         success: true,
         ipfsUrl: placeholderUrl,
-        message: 'Using placeholder (NEXT_PUBLIC_PINATA_JWT not configured)'
+        message: 'Using placeholder (PINATA_JWT not configured)'
       });
     }
 

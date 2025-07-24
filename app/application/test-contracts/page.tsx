@@ -15,7 +15,7 @@ import { ExternalLink } from "lucide-react";
 import { Address } from "viem";
 
 // Import our new modular components
-import LaunchManagerNew from "./components/LaunchManagerNew";
+import LaunchManagerNew from './components/LaunchManagerNew';
 import PhaseManager from "./components/PhaseManager";
 import SupplyMonitor from "./components/SupplyMonitor";
 

@@ -1,14 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount, useWaitForTransactionReceipt, usePublicClient } from "wagmi";
+import {
+  useAccount,
+  useWaitForTransactionReceipt,
+  usePublicClient,
+} from "wagmi";
 import { Address, decodeEventLog } from "viem";
-import { 
+import {
   useLaunchpadContract,
   useLaunchOperations,
-} from '@/lib/hooks/useContracts';
-import { LAUNCHPAD_ABI } from '@/lib/contracts';
-import { useDatabaseLaunches, useDatabaseLaunch, updateLaunchStatus, DatabaseLaunch } from '@/lib/hooks/useDatabaseLaunches';
+} from "@/lib/hooks/useContracts";
+import { LAUNCHPAD_ABI } from "@/lib/contracts";
+import {
+  useDatabaseLaunches,
+  useDatabaseLaunch,
+  updateLaunchStatus,
+  DatabaseLaunch,
+} from "@/lib/hooks/useDatabaseLaunches";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { BatchNFTUpload } from "@/components/ui/batch-nft-upload";
+import { PhaseConfiguration } from "@/components/ui/phase-configuration-simple";
 import { toast } from "sonner";
 import {
   Rocket,
@@ -39,7 +49,7 @@ import {
 
 const STATUS_COLORS = {
   PENDING: "bg-yellow-500",
-  ACTIVE: "bg-green-500", 
+  ACTIVE: "bg-green-500",
   COMPLETED: "bg-blue-500",
   CANCELLED: "bg-red-500",
 } as const;
@@ -100,7 +110,11 @@ export default function LaunchManagerNew({
 
   // Auto-select first launch if available
   useEffect(() => {
-    if (databaseLaunches && databaseLaunches.length > 0 && selectedLaunch === null) {
+    if (
+      databaseLaunches &&
+      databaseLaunches.length > 0 &&
+      selectedLaunch === null
+    ) {
       const firstLaunchId = databaseLaunches[0].launchId;
       console.log(`🎯 Auto-selecting first launch: ${firstLaunchId}`);
       onLaunchSelect(firstLaunchId);
@@ -110,7 +124,9 @@ export default function LaunchManagerNew({
   // Update collection when selected launch changes
   useEffect(() => {
     if (selectedLaunchData && onCollectionChange) {
-      console.log(`🔗 Setting collection address: ${selectedLaunchData.contractAddress}`);
+      console.log(
+        `🔗 Setting collection address: ${selectedLaunchData.contractAddress}`
+      );
       onCollectionChange(selectedLaunchData.contractAddress as Address);
     } else if (!selectedLaunchData && onCollectionChange) {
       onCollectionChange(null);
@@ -126,9 +142,15 @@ export default function LaunchManagerNew({
 
     try {
       onLoadingChange("Creating launch...");
-      console.log("🚀 Creating new launch:", { newLaunchName, newLaunchSymbol, newLaunchSupply, newLaunchImage });
+      console.log("🚀 Creating new launch:", {
+        newLaunchName,
+        newLaunchSymbol,
+        newLaunchSupply,
+        newLaunchImage,
+      });
 
-      const imageUrl = newLaunchImage || 'https://via.placeholder.com/400x400?text=NFT';
+      const imageUrl =
+        newLaunchImage || "https://via.placeholder.com/400x400?text=NFT";
       const description = `${newLaunchName} NFT Collection`;
 
       // Create launch on contract
@@ -146,20 +168,22 @@ export default function LaunchManagerNew({
 
       // Wait for transaction receipt
       if (!publicClient) {
-        throw new Error('Public client not available');
+        throw new Error("Public client not available");
       }
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+      });
       console.log("📋 Transaction receipt:", receipt);
 
       // Parse LaunchCreated event
-      const launchCreatedEvent = receipt.logs.find(log => {
+      const launchCreatedEvent = receipt.logs.find((log) => {
         try {
           const decoded = decodeEventLog({
             abi: LAUNCHPAD_ABI,
             data: log.data,
             topics: log.topics,
           });
-          return decoded.eventName === 'LaunchCreated';
+          return decoded.eventName === "LaunchCreated";
         } catch {
           return false;
         }
@@ -173,7 +197,7 @@ export default function LaunchManagerNew({
         });
 
         console.log("🎉 LaunchCreated event:", decoded);
-        
+
         const { launchId, collection, creator } = decoded.args as {
           launchId: bigint;
           collection: Address;
@@ -182,23 +206,23 @@ export default function LaunchManagerNew({
 
         // Save to database
         onLoadingChange("Saving to database...");
-        const response = await fetch('/api/launchpools', {
-          method: 'POST',
+        const response = await fetch("/api/launchpools", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             launchId: Number(launchId),
             contractAddress: collection,
-            launchpadAddress: '0x6CC9C89C78036f553F6969253D35F17a1CdD3870',
+            launchpadAddress: "0x6CC9C89C78036f553F6969253D35F17a1CdD3870",
             name: newLaunchName,
             symbol: newLaunchSymbol,
             description,
             imageUri: imageUrl,
             maxSupply: parseInt(newLaunchSupply),
             creator: creator,
-            status: 'PENDING',
-            autoProgress: true
+            status: "PENDING",
+            autoProgress: true,
           }),
         });
 
@@ -214,16 +238,15 @@ export default function LaunchManagerNew({
         console.warn("⚠️ LaunchCreated event not found in receipt");
         toast.warning("Launch created but event not found");
       }
-      
+
       // Clear form
       setNewLaunchName("");
       setNewLaunchSymbol("");
       setNewLaunchSupply("100");
       setNewLaunchImage("");
-      
+
       // Refresh launches
       refetchDatabaseLaunches();
-
     } catch (error) {
       console.error("❌ Error creating launch:", error);
       toast.error("Failed to create launch");
@@ -244,17 +267,16 @@ export default function LaunchManagerNew({
       console.log(`🚀 Starting launch ${launch.launchId}...`);
 
       await startLaunch(launch.launchId);
-      
+
       // Update database status
       await updateLaunchStatus(launch.id, "ACTIVE", {
         startTime: new Date().toISOString(),
-        currentPhase: "PHASE_1"
+        currentPhase: "PHASE_1",
       });
 
       toast.success("Launch started successfully!");
       refetchSelectedLaunch();
       refetchDatabaseLaunches();
-
     } catch (error) {
       console.error(`❌ Error starting launch ${launch.launchId}:`, error);
       toast.error("Failed to start launch");
@@ -275,16 +297,15 @@ export default function LaunchManagerNew({
       console.log(`✅ Completing launch ${launch.launchId}...`);
 
       await completeLaunch(launch.launchId);
-      
+
       // Update database status
       await updateLaunchStatus(launch.id, "COMPLETED", {
-        endTime: new Date().toISOString()
+        endTime: new Date().toISOString(),
       });
 
       toast.success("Launch completed successfully!");
       refetchSelectedLaunch();
       refetchDatabaseLaunches();
-
     } catch (error) {
       console.error(`❌ Error completing launch ${launch.launchId}:`, error);
       toast.error("Failed to complete launch");
@@ -305,16 +326,15 @@ export default function LaunchManagerNew({
       console.log(`❌ Cancelling launch ${launch.launchId}...`);
 
       await cancelLaunch(launch.launchId);
-      
+
       // Update database status
       await updateLaunchStatus(launch.id, "CANCELLED", {
-        endTime: new Date().toISOString()
+        endTime: new Date().toISOString(),
       });
 
       toast.success("Launch cancelled successfully!");
       refetchSelectedLaunch();
       refetchDatabaseLaunches();
-
     } catch (error) {
       console.error(`❌ Error cancelling launch ${launch.launchId}:`, error);
       toast.error("Failed to cancel launch");
@@ -424,193 +444,439 @@ export default function LaunchManagerNew({
                   <p className="text-sm">Create a launch first</p>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {/* Launch List */}
-                  <div className="grid gap-4">
-                    {databaseLaunches.map((launch) => (
-                      <LaunchCard
-                        key={launch.id}
-                        launch={launch}
-                        isSelected={selectedLaunch === launch.launchId}
-                        onSelect={() => onLaunchSelect(launch.launchId)}
-                        onStart={() => handleStartLaunch(launch)}
-                        onComplete={() => handleCompleteLaunch(launch)}
-                        onCancel={() => handleCancelLaunch(launch)}
-                        isLoading={isLoading}
-                      />
-                    ))}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Launch List - Left Side */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Your Launches</h3>
+                      <Badge variant="outline">
+                        {databaseLaunches.length} Total
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {databaseLaunches.map((launch) => (
+                        <LaunchCard
+                          key={launch.id}
+                          launch={launch}
+                          isSelected={selectedLaunch === launch.launchId}
+                          onSelect={() => onLaunchSelect(launch.launchId)}
+                          onStart={() => handleStartLaunch(launch)}
+                          onComplete={() => handleCompleteLaunch(launch)}
+                          onCancel={() => handleCancelLaunch(launch)}
+                          isLoading={isLoading}
+                        />
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Selected Launch Detail Management */}
-                  {selectedLaunch !== null && (() => {
-                    const selectedLaunchData = databaseLaunches.find(l => l.launchId === selectedLaunch);
-                    if (!selectedLaunchData) return null;
-
-                    return (
-                      <Card className="border-2 border-blue-200">
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Settings className="h-5 w-5" />
-                            Manage: {selectedLaunchData.name}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <Tabs defaultValue="overview" className="w-full">
-                            <TabsList className="grid w-full grid-cols-3">
-                              <TabsTrigger value="overview">Overview</TabsTrigger>
-                              <TabsTrigger value="nfts" disabled={selectedLaunchData.status === 'PENDING'}>
-                                NFT Upload
-                              </TabsTrigger>
-                              <TabsTrigger value="settings">Settings</TabsTrigger>
-                            </TabsList>
-
-                            {/* Overview Tab */}
-                            <TabsContent value="overview" className="space-y-4">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <Label className="text-sm font-medium">Launch Details</Label>
-                                  <div className="bg-gray-50 p-3 rounded-lg space-y-1">
-                                    <p><strong>Name:</strong> {selectedLaunchData.name}</p>
-                                    <p><strong>Symbol:</strong> {selectedLaunchData.symbol}</p>
-                                    <p><strong>Supply:</strong> {selectedLaunchData.maxSupply}</p>
-                                    <p><strong>Status:</strong> 
-                                      <Badge className={`ml-2 ${STATUS_COLORS[selectedLaunchData.status]}`}>
-                                        {selectedLaunchData.status}
-                                      </Badge>
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label className="text-sm font-medium">Contract Info</Label>
-                                  <div className="bg-gray-50 p-3 rounded-lg space-y-1">
-                                    <p><strong>Launch ID:</strong> {selectedLaunchData.launchId}</p>
-                                    <p><strong>Collection:</strong> 
-                                      <code className="text-xs bg-gray-200 px-1 rounded ml-1">
-                                        {selectedLaunchData.contractAddress.slice(0, 20)}...
-                                      </code>
-                                    </p>
-                                    <p><strong>Creator:</strong> 
-                                      <code className="text-xs bg-gray-200 px-1 rounded ml-1">
-                                        {selectedLaunchData.creator.slice(0, 20)}...
-                                      </code>
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {selectedLaunchData.imageUri && (
-                                <div className="space-y-2">
-                                  <Label className="text-sm font-medium">Cover Image</Label>
-                                  <div className="w-48 h-48 bg-gray-100 rounded-lg overflow-hidden">
-                                    <img 
-                                      src={selectedLaunchData.imageUri} 
-                                      alt={selectedLaunchData.name}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                </div>
-                              )}
-                            </TabsContent>
-
-                            {/* NFT Upload Tab */}
-                            <TabsContent value="nfts" className="space-y-4">
-                              {selectedLaunchData.status === 'PENDING' ? (
-                                <div className="text-center py-8 text-gray-500">
-                                  <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-                                  <p>Launch must be started before uploading NFTs</p>
-                                  <Button 
-                                    onClick={() => handleStartLaunch(selectedLaunchData)}
-                                    className="mt-4"
-                                    disabled={isLoading !== null}
-                                  >
-                                    Start Launch First
-                                  </Button>
-                                </div>
-                              ) : (
-                                <BatchNFTUpload
-                                  maxSupply={selectedLaunchData.maxSupply}
-                                  onUpload={(nfts) => {
-                                    console.log('📦 Batch NFT Upload:', {
-                                      launchId: selectedLaunchData.launchId,
-                                      collection: selectedLaunchData.contractAddress,
-                                      nftCount: nfts.length,
-                                      nfts: nfts.slice(0, 3) // Log first 3 for preview
-                                    });
-                                    toast.success(`Ready to upload ${nfts.length} NFTs to collection`);
-                                    // TODO: Implement actual NFT minting to contract
-                                  }}
-                                  isUploading={isLoading === 'uploading-nfts'}
-                                />
-                              )}
-                            </TabsContent>
-
-                            {/* Settings Tab */}
-                            <TabsContent value="settings" className="space-y-4">
-                              <div className="space-y-4">
-                                <div>
-                                  <Label className="text-sm font-medium">Launch Actions</Label>
-                                  <div className="flex gap-2 mt-2">
-                                    {selectedLaunchData.status === 'PENDING' && (
-                                      <Button
-                                        onClick={() => handleStartLaunch(selectedLaunchData)}
-                                        disabled={isLoading !== null}
-                                        className="bg-green-600 hover:bg-green-700"
-                                      >
-                                        <Play className="mr-2 h-4 w-4" />
-                                        Start Launch
-                                      </Button>
-                                    )}
-                                    {selectedLaunchData.status === 'ACTIVE' && (
-                                      <Button
-                                        onClick={() => handleCompleteLaunch(selectedLaunchData)}
-                                        disabled={isLoading !== null}
-                                        className="bg-blue-600 hover:bg-blue-700"
-                                      >
-                                        <CheckCircle className="mr-2 h-4 w-4" />
-                                        Complete Launch
-                                      </Button>
-                                    )}
-                                    {selectedLaunchData.status !== 'COMPLETED' && selectedLaunchData.status !== 'CANCELLED' && (
-                                      <Button
-                                        onClick={() => handleCancelLaunch(selectedLaunchData)}
-                                        disabled={isLoading !== null}
-                                        variant="destructive"
-                                      >
-                                        <X className="mr-2 h-4 w-4" />
-                                        Cancel Launch
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                                
-                                <div>
-                                  <Label className="text-sm font-medium">Danger Zone</Label>
-                                  <div className="border border-red-200 rounded-lg p-4 mt-2">
-                                    <p className="text-sm text-red-600 mb-2">
-                                      These actions cannot be undone.
-                                    </p>
-                                    <Button
-                                      variant="outline"
-                                      className="text-red-600 border-red-200 hover:bg-red-50"
-                                      onClick={() => {
-                                        if (confirm('Are you sure you want to remove this launch from the database?')) {
-                                          // TODO: Implement launch deletion
-                                          toast.error('Launch deletion not implemented yet');
-                                        }
-                                      }}
-                                    >
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete Launch Record
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            </TabsContent>
-                          </Tabs>
+                  {/* Selected Launch Detail Management - Right Side */}
+                  <div className="space-y-4">
+                    {selectedLaunch === null ? (
+                      <Card className="h-96 flex items-center justify-center">
+                        <CardContent className="text-center">
+                          <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                            Select a Launch
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            Choose a launch from the left to manage its
+                            settings, phases, and NFTs
+                          </p>
                         </CardContent>
                       </Card>
-                    );
-                  })()}
+                    ) : (
+                      (() => {
+                        const selectedLaunchData = databaseLaunches.find(
+                          (l) => l.launchId === selectedLaunch
+                        );
+                        if (!selectedLaunchData) return null;
+
+                        return (
+                          <Card className="border-2 border-blue-200">
+                            <CardHeader>
+                              <CardTitle className="flex items-center gap-2">
+                                <Settings className="h-5 w-5" />
+                                Manage: {selectedLaunchData.name}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <Tabs defaultValue="overview" className="w-full">
+                                <TabsList className="grid w-full grid-cols-4">
+                                  <TabsTrigger value="overview">
+                                    Overview
+                                  </TabsTrigger>
+                                  <TabsTrigger
+                                    value="phases"
+                                    disabled={
+                                      selectedLaunchData.status !== "PENDING"
+                                    }
+                                  >
+                                    Phases
+                                  </TabsTrigger>
+                                  <TabsTrigger
+                                    value="nfts"
+                                    disabled={
+                                      selectedLaunchData.status === "PENDING"
+                                    }
+                                  >
+                                    NFT Upload
+                                  </TabsTrigger>
+                                  <TabsTrigger value="settings">
+                                    Settings
+                                  </TabsTrigger>
+                                </TabsList>
+
+                                {/* Overview Tab */}
+                                <TabsContent
+                                  value="overview"
+                                  className="space-y-4"
+                                >
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium">
+                                        Launch Details
+                                      </Label>
+                                      <div className="bg-gray-50 p-3 rounded-lg space-y-1">
+                                        <p>
+                                          <strong>Name:</strong>{" "}
+                                          {selectedLaunchData.name}
+                                        </p>
+                                        <p>
+                                          <strong>Symbol:</strong>{" "}
+                                          {selectedLaunchData.symbol}
+                                        </p>
+                                        <p>
+                                          <strong>Supply:</strong>{" "}
+                                          {selectedLaunchData.maxSupply}
+                                        </p>
+                                        <p>
+                                          <strong>Status:</strong>
+                                          <Badge
+                                            className={`ml-2 ${
+                                              STATUS_COLORS[
+                                                selectedLaunchData.status
+                                              ]
+                                            }`}
+                                          >
+                                            {selectedLaunchData.status}
+                                          </Badge>
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium">
+                                        Contract Info
+                                      </Label>
+                                      <div className="bg-gray-50 p-3 rounded-lg space-y-1">
+                                        <p>
+                                          <strong>Launch ID:</strong>{" "}
+                                          {selectedLaunchData.launchId}
+                                        </p>
+                                        <p>
+                                          <strong>Collection:</strong>
+                                          <code className="text-xs bg-gray-200 px-1 rounded ml-1">
+                                            {selectedLaunchData.contractAddress.slice(
+                                              0,
+                                              20
+                                            )}
+                                            ...
+                                          </code>
+                                        </p>
+                                        <p>
+                                          <strong>Creator:</strong>
+                                          <code className="text-xs bg-gray-200 px-1 rounded ml-1">
+                                            {selectedLaunchData.creator.slice(
+                                              0,
+                                              20
+                                            )}
+                                            ...
+                                          </code>
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {selectedLaunchData.imageUri && (
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium">
+                                        Cover Image
+                                      </Label>
+                                      <div className="w-48 h-48 bg-gray-100 rounded-lg overflow-hidden">
+                                        <img
+                                          src={selectedLaunchData.imageUri}
+                                          alt={selectedLaunchData.name}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                </TabsContent>
+
+                                {/* Phase Configuration Tab */}
+                                <TabsContent
+                                  value="phases"
+                                  className="space-y-4"
+                                >
+                                  {selectedLaunchData.status !== "PENDING" ? (
+                                    <div className="text-center py-8 text-gray-500">
+                                      <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                                      <p>
+                                        Phase configuration is only available
+                                        for pending launches
+                                      </p>
+                                      <p className="text-sm mt-1">
+                                        Launch must be in PENDING status to
+                                        configure phases
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <PhaseConfiguration
+                                      launchId={selectedLaunchData.launchId}
+                                      maxSupply={selectedLaunchData.maxSupply}
+                                      onPhaseConfigured={() => {
+                                        toast.success(
+                                          "Phase configured successfully!"
+                                        );
+                                        // Optionally refetch data here
+                                      }}
+                                    />
+                                  )}
+                                </TabsContent>
+
+                                {/* NFT Upload Tab */}
+                                <TabsContent value="nfts" className="space-y-4">
+                                  {selectedLaunchData.status === "COMPLETED" ||
+                                  selectedLaunchData.status === "CANCELLED" ? (
+                                    <div className="text-center py-8 text-gray-500">
+                                      <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                                      <p>
+                                        Cannot upload NFTs for{" "}
+                                        {selectedLaunchData.status.toLowerCase()}{" "}
+                                        launches
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-4">
+                                      {selectedLaunchData.status ===
+                                        "PENDING" && (
+                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                          <div className="flex items-center gap-2 text-yellow-800">
+                                            <AlertCircle className="h-4 w-4" />
+                                            <span className="text-sm font-medium">
+                                              Launch Not Started
+                                            </span>
+                                          </div>
+                                          <p className="text-sm text-yellow-700 mt-1">
+                                            You can prepare NFT metadata now,
+                                            but the launch must be started
+                                            before users can mint.
+                                          </p>
+                                          <Button
+                                            onClick={() =>
+                                              handleStartLaunch(
+                                                selectedLaunchData
+                                              )
+                                            }
+                                            className="mt-3 bg-yellow-600 hover:bg-yellow-700"
+                                            disabled={isLoading !== null}
+                                            size="sm"
+                                          >
+                                            Start Launch Now
+                                          </Button>
+                                        </div>
+                                      )}
+                                      <BatchNFTUpload
+                                        launchId={selectedLaunchData.launchId}
+                                        maxSupply={selectedLaunchData.maxSupply}
+                                        collectionName={selectedLaunchData.name}
+                                        onUpload={async (nfts) => {
+                                          try {
+                                            onLoadingChange("uploading-nfts");
+
+                                            console.log('📦 Starting Batch NFT Upload:', {
+                                              launchId: selectedLaunchData.launchId,
+                                              collection: selectedLaunchData.contractAddress,
+                                              nftCount: nfts.length,
+                                              firstNFT: nfts[0],
+                                              hasImageData: nfts[0]?.imageData ? 'YES' : 'NO'
+                                            });
+
+                                            toast.info(
+                                              `🚀 Uploading ${nfts.length} NFTs to IPFS...`
+                                            );
+
+                                            // Upload batch NFTs to IPFS
+                                            const response = await fetch(
+                                              "/api/upload-batch-nfts",
+                                              {
+                                                method: "POST",
+                                                headers: {
+                                                  "Content-Type":
+                                                    "application/json",
+                                                },
+                                                body: JSON.stringify({
+                                                  nfts,
+                                                  launchId:
+                                                    selectedLaunchData.launchId,
+                                                  collectionAddress:
+                                                    selectedLaunchData.contractAddress,
+                                                }),
+                                              }
+                                            );
+
+                                            const result =
+                                              await response.json();
+
+                                            if (
+                                              !response.ok ||
+                                              !result.success
+                                            ) {
+                                              throw new Error(
+                                                result.error || "Upload failed"
+                                              );
+                                            }
+
+                                            console.log(
+                                              "✅ Batch NFT Upload Success:",
+                                              result
+                                            );
+
+                                            toast.success(
+                                              `🎉 Successfully uploaded ${result.successCount}/${result.totalCount} NFTs to IPFS!`
+                                            );
+
+                                            if (result.failureCount > 0) {
+                                              toast.warning(
+                                                `⚠️ ${result.failureCount} NFTs failed to upload. Check console for details.`
+                                              );
+                                            }
+
+                                            // TODO: Store metadata URIs in database or contract
+                                            // This will be used for minting later
+                                          } catch (error) {
+                                            console.error(
+                                              "❌ Batch NFT Upload Error:",
+                                              error
+                                            );
+                                            toast.error(
+                                              `Failed to upload NFTs: ${
+                                                error instanceof Error
+                                                  ? error.message
+                                                  : "Unknown error"
+                                              }`
+                                            );
+                                          } finally {
+                                            onLoadingChange(null);
+                                          }
+                                        }}
+                                        isUploading={
+                                          isLoading === "uploading-nfts"
+                                        }
+                                      />
+                                    </div>
+                                  )}
+                                </TabsContent>
+
+                                {/* Settings Tab */}
+                                <TabsContent
+                                  value="settings"
+                                  className="space-y-4"
+                                >
+                                  <div className="space-y-4">
+                                    <div>
+                                      <Label className="text-sm font-medium">
+                                        Launch Actions
+                                      </Label>
+                                      <div className="flex gap-2 mt-2">
+                                        {selectedLaunchData.status ===
+                                          "PENDING" && (
+                                          <Button
+                                            onClick={() =>
+                                              handleStartLaunch(
+                                                selectedLaunchData
+                                              )
+                                            }
+                                            disabled={isLoading !== null}
+                                            className="bg-green-600 hover:bg-green-700"
+                                          >
+                                            <Play className="mr-2 h-4 w-4" />
+                                            Start Launch
+                                          </Button>
+                                        )}
+                                        {selectedLaunchData.status ===
+                                          "ACTIVE" && (
+                                          <Button
+                                            onClick={() =>
+                                              handleCompleteLaunch(
+                                                selectedLaunchData
+                                              )
+                                            }
+                                            disabled={isLoading !== null}
+                                            className="bg-blue-600 hover:bg-blue-700"
+                                          >
+                                            <CheckCircle className="mr-2 h-4 w-4" />
+                                            Complete Launch
+                                          </Button>
+                                        )}
+                                        {selectedLaunchData.status !==
+                                          "COMPLETED" &&
+                                          selectedLaunchData.status !==
+                                            "CANCELLED" && (
+                                            <Button
+                                              onClick={() =>
+                                                handleCancelLaunch(
+                                                  selectedLaunchData
+                                                )
+                                              }
+                                              disabled={isLoading !== null}
+                                              variant="destructive"
+                                            >
+                                              <X className="mr-2 h-4 w-4" />
+                                              Cancel Launch
+                                            </Button>
+                                          )}
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <Label className="text-sm font-medium">
+                                        Danger Zone
+                                      </Label>
+                                      <div className="border border-red-200 rounded-lg p-4 mt-2">
+                                        <p className="text-sm text-red-600 mb-2">
+                                          These actions cannot be undone.
+                                        </p>
+                                        <Button
+                                          variant="outline"
+                                          className="text-red-600 border-red-200 hover:bg-red-50"
+                                          onClick={() => {
+                                            if (
+                                              confirm(
+                                                "Are you sure you want to remove this launch from the database?"
+                                              )
+                                            ) {
+                                              // TODO: Implement launch deletion
+                                              toast.error(
+                                                "Launch deletion not implemented yet"
+                                              );
+                                            }
+                                          }}
+                                        >
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Delete Launch Record
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </TabsContent>
+                              </Tabs>
+                            </CardContent>
+                          </Card>
+                        );
+                      })()
+                    )}
+                  </div>
                 </div>
               )}
             </TabsContent>
@@ -653,7 +919,9 @@ function LaunchCard({
           <div className="flex items-center gap-3">
             <StatusIcon className="h-5 w-5" />
             <div>
-              <h3 className="font-semibold">{launch.name} ({launch.symbol})</h3>
+              <h3 className="font-semibold">
+                {launch.name} ({launch.symbol})
+              </h3>
               <p className="text-sm text-gray-600">
                 Launch ID: {launch.launchId} | Supply: {launch.maxSupply}
               </p>

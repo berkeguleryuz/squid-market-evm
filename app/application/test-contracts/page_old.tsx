@@ -476,7 +476,7 @@ export default function LaunchManagementPage() {
       formData.append("file", file);
 
       // Try Pinata first (if API key is available)
-      const pinataJWT = process.env.NEXT_PUBLIC_PINATA_JWT;
+      const pinataJWT = process.env.PINATA_JWT;
       
       if (pinataJWT) {
         console.log("🌐 Uploading to IPFS via Pinata...");
@@ -584,7 +584,7 @@ export default function LaunchManagementPage() {
         formData.append('file', imageFile);
 
         let imageUrl = '';
-        const pinataJWT = process.env.NEXT_PUBLIC_PINATA_JWT;
+        const pinataJWT = process.env.PINATA_JWT;
 
         if (pinataJWT) {
           try {
@@ -662,7 +662,7 @@ export default function LaunchManagementPage() {
         try {
           // Upload metadata to IPFS
           let metadataUrl = '';
-          const pinataJWT = process.env.NEXT_PUBLIC_PINATA_JWT;
+          const pinataJWT = process.env.PINATA_JWT;
 
           if (pinataJWT) {
             const metadataBlob = new Blob([JSON.stringify(nft.metadata)], { type: 'application/json' });
@@ -761,7 +761,7 @@ export default function LaunchManagementPage() {
       
       try {
         // Try to upload metadata to IPFS
-        const pinataJWT = process.env.NEXT_PUBLIC_PINATA_JWT;
+        const pinataJWT = process.env.PINATA_JWT;
         
         if (pinataJWT) {
           console.log("🌐 Uploading metadata to IPFS...");
@@ -1713,19 +1713,19 @@ export default function LaunchManagementPage() {
                       <br />
                       <strong>🔧 Pinata Setup:</strong>
                       <br />
-                      • JWT Token: {process.env.NEXT_PUBLIC_PINATA_JWT ? '✅ Configured' : '❌ Not configured'}
+                      • JWT Token: {process.env.PINATA_JWT ? '✅ Configured' : '❌ Not configured'}
                       <br />
                       • Fallback: Placeholder IPFS images
                       <br />
                       • Real URLs work in OpenSea/Etherscan
                       <br />
                       <br />
-                      {!process.env.NEXT_PUBLIC_PINATA_JWT && (
+                      {!process.env.PINATA_JWT && (
                         <div className="text-yellow-600 bg-yellow-500/10 p-2 rounded mt-2">
                           <strong>⚙️ Setup Pinata:</strong><br/>
                           1. Go to Pinata dashboard → API Keys<br/>
                           2. Create new key → Copy JWT token<br/>
-                          3. Add to .env.local: NEXT_PUBLIC_PINATA_JWT=your_jwt_here<br/>
+                          3. Add to .env.local: PINATA_JWT=your_jwt_here<br/>
                           4. Restart dev server
                         </div>
                       )}
