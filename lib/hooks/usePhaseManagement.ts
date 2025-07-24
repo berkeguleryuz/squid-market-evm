@@ -1,17 +1,22 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { Address } from 'viem';
-import { LAUNCHPAD_ABI } from '@/lib/contracts';
-import { getContractAddress } from '@/lib/wagmi';
+import { useState, useEffect, useMemo } from "react";
+import {
+  useAccount,
+  useReadContract,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+} from "wagmi";
+import { getContractAddress } from "@/lib/wagmi";
+import { LAUNCHPAD_ABI, NFT_COLLECTION_ABI } from "@/lib/contracts";
+import { Address } from "viem";
 
 // Phase enum matching contract
 export enum Phase {
   NONE = 0,
   PRESALE = 1,
   WHITELIST = 2,
-  PUBLIC = 3
+  PUBLIC = 3,
 }
 
 export interface PhaseConfig {
@@ -34,37 +39,37 @@ export interface LaunchPhaseInfo {
 
 // Hook to get phase configuration for a launch
 export const usePhaseConfig = (launchId: number, phase: Phase) => {
-  const launchpad = useMemo(() => getContractAddress('LAUNCHPAD'), []);
-  
+  const launchpad = useMemo(() => getContractAddress("LAUNCHPAD"), []);
+
   return useReadContract({
     address: launchpad,
     abi: LAUNCHPAD_ABI,
-    functionName: 'launchPhases',
+    functionName: "launchPhases",
     args: [BigInt(launchId), phase],
     query: {
       enabled: launchId > 0 && phase > 0,
       refetchInterval: 30000, // Refetch every 30 seconds
-    }
+    },
   });
 };
 
 // Hook to get current launch info including phase
 export const useLaunchPhaseInfo = (launchId: number) => {
-  const launchpad = useMemo(() => getContractAddress('LAUNCHPAD'), []);
-  
+  const launchpad = useMemo(() => getContractAddress("LAUNCHPAD"), []);
+
   const { data: launchInfo } = useReadContract({
     address: launchpad,
     abi: LAUNCHPAD_ABI,
-    functionName: 'launches',
+    functionName: "launches",
     args: [BigInt(launchId)],
     query: {
       enabled: launchId > 0,
       refetchInterval: 10000, // Refetch every 10 seconds
-    }
+    },
   });
 
   const currentPhase = launchInfo ? Number(launchInfo[7]) : 0; // currentPhase is at index 7
-  
+
   // Get configs for all phases
   const { data: presaleConfig } = usePhaseConfig(launchId, Phase.PRESALE);
   const { data: whitelistConfig } = usePhaseConfig(launchId, Phase.WHITELIST);
@@ -82,16 +87,18 @@ export const useLaunchPhaseInfo = (launchId: number) => {
     const configs = [
       { phase: Phase.PRESALE, config: presaleConfig },
       { phase: Phase.WHITELIST, config: whitelistConfig },
-      { phase: Phase.PUBLIC, config: publicConfig }
+      { phase: Phase.PUBLIC, config: publicConfig },
     ];
 
     configs.forEach(({ phase, config }) => {
-      if (config && config[6]) { // isConfigured is at index 6
+      if (config && config[6]) {
+        // isConfigured is at index 6
         const startTime = Number(config[1]);
         const endTime = Number(config[2]);
-        const isActive = currentPhase === phase && now >= startTime && now <= endTime;
+        const isActive =
+          currentPhase === phase && now >= startTime && now <= endTime;
         const timeRemaining = isActive ? endTime - now : 0;
-        
+
         phases.push({
           phase,
           config: {
@@ -101,11 +108,11 @@ export const useLaunchPhaseInfo = (launchId: number) => {
             maxPerWallet: config[3],
             maxSupply: config[4],
             totalSold: config[5],
-            isConfigured: config[6]
+            isConfigured: config[6],
           },
           isActive,
           timeRemaining,
-          canMint: isActive && Number(config[5]) < Number(config[4]) // totalSold < maxSupply
+          canMint: isActive && Number(config[5]) < Number(config[4]), // totalSold < maxSupply
         });
       }
     });
@@ -117,8 +124,10 @@ export const useLaunchPhaseInfo = (launchId: number) => {
     launchInfo,
     currentPhase,
     phases: phaseInfo,
-    activePhase: phaseInfo.find(p => p.isActive),
-    nextPhase: phaseInfo.find(p => p.phase > currentPhase && p.config.isConfigured)
+    activePhase: phaseInfo.find((p) => p.isActive),
+    nextPhase: phaseInfo.find(
+      (p) => p.phase > currentPhase && p.config.isConfigured
+    ),
   };
 };
 
@@ -135,30 +144,56 @@ export const useConfigurePhase = () => {
     price: string,
     startTime: number,
     endTime: number,
-    maxPerWallet: number,
-    maxSupply: number
+    maxPerWallet: number
   ) => {
-    const launchpad = getContractAddress('LAUNCHPAD');
-    
+    const launchpad = getContractAddress("LAUNCHPAD");
+
     try {
       // Convert price from ETH to wei (multiply by 10^18)
       const priceInWei = BigInt(Math.floor(parseFloat(price) * 1e18));
-      
-      console.log('🔧 Configuring phase:', {
+
+      console.log("🔧 Configuring phase - basic info:", {
         launchId,
         phase,
-        price: `${price} ETH`,
-        priceInWei: priceInWei.toString(),
-        startTime: new Date(startTime * 1000).toISOString(),
-        endTime: new Date(endTime * 1000).toISOString(),
+        price,
+        startTime,
+        endTime,
         maxPerWallet,
-        maxSupply
       });
-      
+
+      console.log("🔧 Price conversion:", {
+        originalPrice: price,
+        priceInWei: priceInWei.toString(),
+      });
+
+      // Debug contract call parameters
+      console.log("🔍 Contract call debug:", {
+        launchpadAddress: launchpad,
+        addressType: typeof launchpad,
+        addressLength: launchpad?.length,
+        functionName: "configurePhase",
+        argsTypes: [
+          typeof BigInt(launchId),
+          typeof phase,
+          typeof priceInWei,
+          typeof BigInt(startTime),
+          typeof BigInt(endTime),
+          typeof BigInt(maxPerWallet),
+        ],
+      });
+
+      if (!launchpad) {
+        throw new Error("❌ Launchpad address is undefined!");
+      }
+
+      if (typeof launchpad !== "string" || launchpad.length !== 42) {
+        throw new Error(`❌ Invalid launchpad address format: ${launchpad}`);
+      }
+
       await writeContract({
         address: launchpad,
         abi: LAUNCHPAD_ABI,
-        functionName: 'configurePhase',
+        functionName: "configurePhase",
         args: [
           BigInt(launchId),
           phase,
@@ -166,11 +201,10 @@ export const useConfigurePhase = () => {
           BigInt(startTime),
           BigInt(endTime),
           BigInt(maxPerWallet),
-          BigInt(maxSupply)
         ],
       });
     } catch (error) {
-      console.error('❌ Configure phase error:', error);
+      console.error("❌ Configure phase error:", error);
       throw error;
     }
   };
@@ -180,7 +214,7 @@ export const useConfigurePhase = () => {
     hash,
     isPending,
     isConfirming,
-    isSuccess
+    isSuccess,
   };
 };
 
@@ -191,18 +225,21 @@ export const useStartLaunchWithPhases = () => {
     hash,
   });
 
-  const startLaunch = async (launchId: number, autoProgressPhases: boolean = true) => {
-    const launchpad = getContractAddress('LAUNCHPAD');
-    
+  const startLaunch = async (
+    launchId: number,
+    autoProgressPhases: boolean = true
+  ) => {
+    const launchpad = getContractAddress("LAUNCHPAD");
+
     try {
       await writeContract({
         address: launchpad,
         abi: LAUNCHPAD_ABI,
-        functionName: 'startLaunch',
+        functionName: "startLaunch",
         args: [BigInt(launchId), autoProgressPhases],
       });
     } catch (error) {
-      console.error('❌ Start launch error:', error);
+      console.error("❌ Start launch error:", error);
       throw error;
     }
   };
@@ -212,7 +249,7 @@ export const useStartLaunchWithPhases = () => {
     hash,
     isPending,
     isConfirming,
-    isSuccess
+    isSuccess,
   };
 };
 
@@ -223,20 +260,104 @@ export const usePurchaseNFT = () => {
     hash,
   });
 
-  const purchaseNFT = async (launchId: number, quantity: number, phase: Phase, pricePerNFT: string) => {
-    const launchpad = getContractAddress('LAUNCHPAD');
-    const totalPrice = BigInt(pricePerNFT) * BigInt(quantity);
-    
+  const { address } = useAccount();
+
+  const purchaseNFT = async (
+    launchId: number,
+    quantity: number,
+    phase: Phase,
+    pricePerNFT: string,
+    collectionAddress?: Address
+  ) => {
+    console.log("🔍 purchaseNFT called with:", {
+      launchId,
+      quantity,
+      phase,
+      pricePerNFT,
+      collectionAddress,
+    });
+
     try {
-      await writeContract({
-        address: launchpad,
-        abi: LAUNCHPAD_ABI,
-        functionName: 'purchaseNFT',
-        args: [BigInt(launchId), BigInt(quantity)],
-        value: totalPrice,
-      });
+      if (!address) {
+        throw new Error("Please connect your wallet first");
+      }
+
+      if (!collectionAddress) {
+        throw new Error(
+          "Collection address is required for minting. Please ensure the launch is properly configured."
+        );
+      }
+
+      console.log("🎨 Using collection address:", collectionAddress);
+
+      // pricePerNFT is already in wei format from DynamicMintButton
+      const pricePerNFTWei = BigInt(pricePerNFT);
+      console.log("💰 Price per NFT (wei):", pricePerNFTWei.toString());
+
+      // Get available NFT metadata from database
+      console.log(`🔍 Fetching available NFT metadata for launch ${launchId}...`);
+      
+      const metadataResponse = await fetch(`/api/nft-metadata/${launchId}`);
+      if (!metadataResponse.ok) {
+        throw new Error("Failed to fetch NFT metadata. Please ensure NFTs are uploaded first.");
+      }
+      
+      const metadataData = await metadataResponse.json();
+      const availableNFTs = metadataData.availableNFTs;
+      
+      if (!availableNFTs || availableNFTs.length === 0) {
+        throw new Error("No NFTs available for minting. Please upload NFTs first.");
+      }
+      
+      if (availableNFTs.length < quantity) {
+        throw new Error(`Only ${availableNFTs.length} NFTs available, but ${quantity} requested.`);
+      }
+      
+      console.log(`📦 Found ${availableNFTs.length} available NFTs, minting ${quantity}...`);
+      
+      const results = [];
+
+      for (let i = 0; i < quantity; i++) {
+        const nftMetadata = availableNFTs[i];
+        console.log(`🚀 Minting NFT ${i + 1}/${quantity}: ${nftMetadata.name}...`);
+
+        const result = await writeContract({
+          address: collectionAddress,
+          abi: NFT_COLLECTION_ABI,
+          functionName: "mintNFT",
+          args: [address as Address, phase, nftMetadata.metadataUri],
+          value: pricePerNFTWei,
+        });
+
+        console.log(`✅ NFT ${i + 1} mint result:`, result);
+        results.push(result);
+        
+        // Mark NFT as minted in database
+        try {
+          await fetch(`/api/nft-metadata/${launchId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tokenId: nftMetadata.tokenId,
+              mintedTo: address,
+            }),
+          });
+          console.log(`💾 NFT ${nftMetadata.tokenId} marked as minted`);
+        } catch (dbError) {
+          console.error(`❌ Failed to mark NFT as minted:`, dbError);
+          // Continue even if database update fails
+        }
+
+        // Small delay between mints to avoid nonce issues
+        if (i < quantity - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
+
+      console.log("✅ All NFTs minted successfully:", results);
+      return results[0]; // Return first transaction hash for UI
     } catch (error) {
-      console.error('❌ Purchase NFT error:', error);
+      console.error("❌ Purchase NFT error:", error);
       throw error;
     }
   };
@@ -246,7 +367,7 @@ export const usePurchaseNFT = () => {
     hash,
     isPending,
     isConfirming,
-    isSuccess
+    isSuccess,
   };
 };
 
@@ -254,24 +375,24 @@ export const usePurchaseNFT = () => {
 export const getPhaseDisplayName = (phase: Phase): string => {
   switch (phase) {
     case Phase.PRESALE:
-      return 'Pre-sale';
+      return "Pre-sale";
     case Phase.WHITELIST:
-      return 'Waitlist';
+      return "Waitlist";
     case Phase.PUBLIC:
-      return 'Public Sale';
+      return "Public Sale";
     default:
-      return 'Unknown';
+      return "Unknown";
   }
 };
 
 export const formatTimeRemaining = (seconds: number): string => {
-  if (seconds <= 0) return 'Ended';
-  
+  if (seconds <= 0) return "Ended";
+
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
-  
+
   if (days > 0) return `${days}d ${hours}h ${minutes}m`;
   if (hours > 0) return `${hours}h ${minutes}m ${secs}s`;
   if (minutes > 0) return `${minutes}m ${secs}s`;

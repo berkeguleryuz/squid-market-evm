@@ -12,6 +12,7 @@ import {
   useLaunchOperations,
 } from "@/lib/hooks/useContracts";
 import { LAUNCHPAD_ABI } from "@/lib/contracts";
+import { CONTRACT_ADDRESSES } from "@/lib/wagmi";
 import {
   useDatabaseLaunches,
   useDatabaseLaunch,
@@ -32,7 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { BatchNFTUpload } from "@/components/ui/batch-nft-upload";
-import { PhaseConfiguration } from "@/components/ui/phase-configuration-simple";
+import PhaseManager from "./PhaseManager";
 import { toast } from "sonner";
 import {
   Rocket,
@@ -206,24 +207,37 @@ export default function LaunchManagerNew({
 
         // Save to database
         onLoadingChange("Saving to database...");
+        const requestData = {
+          launchId: Number(launchId),
+          contractAddress: collection,
+          launchpadAddress: CONTRACT_ADDRESSES.LAUNCHPAD,
+          name: newLaunchName,
+          symbol: newLaunchSymbol,
+          description,
+          imageUri: imageUrl,
+          maxSupply: parseInt(newLaunchSupply),
+          creator: creator,
+          status: "PENDING",
+          autoProgress: true,
+        };
+
+        console.log("🔍 Sending to API:", requestData);
+        console.log("🔍 Field validation:", {
+          launchId: !!requestData.launchId,
+          contractAddress: !!requestData.contractAddress,
+          launchpadAddress: !!requestData.launchpadAddress,
+          name: !!requestData.name,
+          symbol: !!requestData.symbol,
+          maxSupply: !!requestData.maxSupply,
+          creator: !!requestData.creator,
+        });
+
         const response = await fetch("/api/launchpools", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            launchId: Number(launchId),
-            contractAddress: collection,
-            launchpadAddress: "0x6CC9C89C78036f553F6969253D35F17a1CdD3870",
-            name: newLaunchName,
-            symbol: newLaunchSymbol,
-            description,
-            imageUri: imageUrl,
-            maxSupply: parseInt(newLaunchSupply),
-            creator: creator,
-            status: "PENDING",
-            autoProgress: true,
-          }),
+          body: JSON.stringify(requestData),
         });
 
         const result = await response.json();
@@ -509,7 +523,8 @@ export default function LaunchManagerNew({
                                   <TabsTrigger
                                     value="phases"
                                     disabled={
-                                      selectedLaunchData.status !== "PENDING"
+                                      selectedLaunchData.status === "COMPLETED" ||
+                                      selectedLaunchData.status === "CANCELLED"
                                     }
                                   >
                                     Phases
@@ -618,28 +633,26 @@ export default function LaunchManagerNew({
                                   value="phases"
                                   className="space-y-4"
                                 >
-                                  {selectedLaunchData.status !== "PENDING" ? (
+                                  {selectedLaunchData.status === "COMPLETED" ||
+                                  selectedLaunchData.status === "CANCELLED" ? (
                                     <div className="text-center py-8 text-gray-500">
                                       <AlertCircle className="h-8 w-8 mx-auto mb-2" />
                                       <p>
-                                        Phase configuration is only available
-                                        for pending launches
+                                        Phase configuration is not available
+                                        for {selectedLaunchData.status.toLowerCase()} launches
                                       </p>
                                       <p className="text-sm mt-1">
-                                        Launch must be in PENDING status to
-                                        configure phases
+                                        Only pending and active launches can configure phases
                                       </p>
                                     </div>
                                   ) : (
-                                    <PhaseConfiguration
-                                      launchId={selectedLaunchData.launchId}
-                                      maxSupply={selectedLaunchData.maxSupply}
-                                      onPhaseConfigured={() => {
-                                        toast.success(
-                                          "Phase configured successfully!"
-                                        );
-                                        // Optionally refetch data here
-                                      }}
+                                    <PhaseManager
+                                      selectedCollection={
+                                        selectedLaunchData.contractAddress as Address
+                                      }
+                                      selectedLaunch={selectedLaunchData}
+                                      isLoading={isLoading}
+                                      onLoadingChange={onLoadingChange}
                                     />
                                   )}
                                 </TabsContent>
@@ -694,13 +707,20 @@ export default function LaunchManagerNew({
                                           try {
                                             onLoadingChange("uploading-nfts");
 
-                                            console.log('📦 Starting Batch NFT Upload:', {
-                                              launchId: selectedLaunchData.launchId,
-                                              collection: selectedLaunchData.contractAddress,
-                                              nftCount: nfts.length,
-                                              firstNFT: nfts[0],
-                                              hasImageData: nfts[0]?.imageData ? 'YES' : 'NO'
-                                            });
+                                            console.log(
+                                              "📦 Starting Batch NFT Upload:",
+                                              {
+                                                launchId:
+                                                  selectedLaunchData.launchId,
+                                                collection:
+                                                  selectedLaunchData.contractAddress,
+                                                nftCount: nfts.length,
+                                                firstNFT: nfts[0],
+                                                hasImageData: nfts[0]?.imageData
+                                                  ? "YES"
+                                                  : "NO",
+                                              }
+                                            );
 
                                             toast.info(
                                               `🚀 Uploading ${nfts.length} NFTs to IPFS...`

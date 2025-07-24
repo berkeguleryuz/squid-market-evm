@@ -4,7 +4,7 @@ import { Address } from "viem";
 
 // Contract addresses for Sepolia testnet only
 export const CONTRACT_ADDRESSES: Record<string, Address> = {
-  LAUNCHPAD: "0x6CC9C89C78036f553F6969253D35F17a1CdD3870" as Address, // ✅ LaunchpadCore Deployed & Verified with getActiveLaunches!
+  LAUNCHPAD: "0x87763147AeA7a9903af63518Aa85D00Ae0FB68f0" as Address, // ✅ LaunchpadCore with Automatic setLaunchpadContract - Deployed
   MARKETPLACE: "0x4c37452412Aed0ef80A68980Dc555E9EcB46277A" as Address, // ✅ Deployed & Verified
   PAYMENT_HANDLER: "0xe362BE87d431bDA6EE84CAB3d8c4C88d8213E9bA" as Address, // ✅ Deployed & Verified
   NFT_COLLECTION: "0xE6C16bF41Fb43278C5AD59dacB69381643689E8A" as Address, // ✅ Deployed & Verified

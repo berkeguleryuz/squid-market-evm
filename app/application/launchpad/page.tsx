@@ -5,7 +5,6 @@ import {
   Rocket, 
   Plus, 
   Clock, 
-  Coins,
   CheckCircle,
   Target,
   Zap,
@@ -18,6 +17,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { useRealLaunches, RealLaunch } from '@/lib/hooks/useRealLaunches';
+import { DynamicMintButton } from '@/components/ui/dynamic-mint-button';
 import { useLaunchpadContract } from '@/lib/hooks/useContracts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -385,16 +385,12 @@ function LaunchCard({ launch, onStartLaunch, isLoading, isOwner }: LaunchCardPro
             </Button>
           )}
 
-          {launch.status === 1 && (
-            <Button
-              asChild
-              className="w-full bg-green-500 text-white border border-green-400 hover:bg-green-600 rounded-lg font-inter font-semibold"
-            >
-              <Link href={`/application/test-contracts`}>
-                <Coins className="h-4 w-4 mr-2 text-white" />
-                <span className="text-white">Mint NFTs (Set Price First)</span>
-              </Link>
-            </Button>
+          {launch.status === 1 && launch.collection && (
+            <DynamicMintButton 
+              launchId={launch.launchId}
+              collectionAddress={launch.collection as `0x${string}`}
+              launchStatus={launch.status}
+            />
           )}
 
           <Button

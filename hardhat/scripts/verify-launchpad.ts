@@ -9,7 +9,7 @@ async function main() {
   console.log(`Network: ${networkName} (Chain ID: ${parseInt(chainId, 16)})`);
 
   // LaunchpadCore address from deployment
-  const launchpadCore = "0x51eE6C806C946A84ee3F642D9E969A928D997267";
+  const launchpadCore = "0x87763147AeA7a9903af63518Aa85D00Ae0FB68f0";
   const deployer = "0x726965AD57752b79aF2C0Db0E5b08Fe00328dd8B";
 
   // Give Etherscan some time to index the contract

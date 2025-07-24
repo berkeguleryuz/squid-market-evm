@@ -45,3 +45,24 @@ model LaunchPool {
 
   @@map("launchpools")
 }
+
+model NFTMetadata {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  launchId         Int      // Associated launch ID
+  collectionAddress String  // NFT Collection contract address
+  tokenId          Int      // Token ID for this NFT
+  name             String   // NFT name
+  description      String?  // NFT description
+  image            String?  // Image URL (IPFS)
+  attributes       Json?    // NFT attributes as JSON
+  metadataUri      String   // IPFS metadata URI
+  ipfsHash         String?  // IPFS hash for metadata
+  isMinted         Boolean  @default(false) // Whether this NFT has been minted
+  mintedTo         String?  // Wallet address that minted this NFT
+  mintedAt         DateTime? // When this NFT was minted
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([launchId, tokenId]) // Ensure unique tokenId per launch
+  @@map("nft_metadata")
+}

@@ -28,7 +28,6 @@ const navigation = [
 export function Header() {
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { address, isConnected } = useAccount();
@@ -68,7 +67,8 @@ export function Header() {
           {/* Logo */}
           <Link
             href="/"
-            className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+            className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+          >
             <div className="relative w-8 h-8">
               <Image
                 src="/squidlogow.jpg"
@@ -91,7 +91,8 @@ export function Header() {
                 onClick={() => handleNavClick(item.href)}
                 className={`font-inter font-medium transition-all hover:text-neon-cyan cursor-pointer ${
                   isActive(item.href) ? "text-neon-cyan" : "text-white/80"
-                }`}>
+                }`}
+              >
                 {item.name}
               </button>
             ))}
@@ -107,48 +108,6 @@ export function Header() {
             {/* Wallet Connect */}
             <div className="flex items-center space-x-3">
               <ConnectButton />
-
-              {/* User Menu - Only show when connected */}
-              {isConnected && address && (
-                <div className="relative">
-                  <button
-                    onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center space-x-2 p-2 text-white/80 hover:text-white transition-colors">
-                    <User className="h-5 w-5" />
-                    <span className="text-sm font-mono">
-                      {formatAddress(address)}
-                    </span>
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
-
-                  {/* User Dropdown */}
-                  {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 glass rounded-lg border border-white/10 py-2 shadow-xl">
-                      <button
-                        onClick={() => handleNavClick("/my-nfts")}
-                        className="flex items-center w-full px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors">
-                        <Wallet className="h-4 w-4 mr-3" />
-                        My NFTs
-                      </button>
-                      <button
-                        onClick={() => handleNavClick("/application/create")}
-                        className="flex items-center w-full px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors">
-                        <Settings className="h-4 w-4 mr-3" />
-                        Create NFT
-                      </button>
-                      <div className="border-t border-white/10 my-1"></div>
-                      <a
-                        href={`https://sepolia.etherscan.io/address/${address}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center w-full px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors">
-                        <ExternalLink className="h-4 w-4 mr-3" />
-                        View on Etherscan
-                      </a>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 
@@ -156,7 +115,8 @@ export function Header() {
           <div className="md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-white/80 hover:text-white transition-colors">
+              className="text-white/80 hover:text-white transition-colors"
+            >
               {mobileMenuOpen ? (
                 <X className="h-6 w-6" />
               ) : (
@@ -178,7 +138,8 @@ export function Header() {
                     isActive(item.href)
                       ? "text-neon-cyan bg-white/5"
                       : "text-white/80 hover:text-white hover:bg-white/5"
-                  }`}>
+                  }`}
+                >
                   {item.name}
                 </button>
               ))}
@@ -201,7 +162,8 @@ export function Header() {
                     href={`https://sepolia.etherscan.io/address/${address}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center mt-2 text-sm text-neon-cyan hover:text-neon-cyan/80 transition-colors">
+                    className="inline-flex items-center mt-2 text-sm text-neon-cyan hover:text-neon-cyan/80 transition-colors"
+                  >
                     <ExternalLink className="h-4 w-4 mr-1" />
                     View on Etherscan
                   </a>
@@ -211,14 +173,6 @@ export function Header() {
           </div>
         )}
       </div>
-
-      {/* Backdrop for user menu */}
-      {userMenuOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setUserMenuOpen(false)}
-        />
-      )}
     </header>
   );
 }

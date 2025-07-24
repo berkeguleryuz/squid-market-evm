@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 interface NFTMetadata {
   id: number;
@@ -218,6 +221,28 @@ export async function POST(request: NextRequest) {
           }
 
           const metadataUri = `https://gateway.pinata.cloud/ipfs/${result.IpfsHash}`;
+
+          // Save to database
+          try {
+            await prisma.nFTMetadata.create({
+              data: {
+                launchId: parseInt(launchId),
+                collectionAddress,
+                tokenId: i + 1,
+                name: nft.name,
+                description: nft.description,
+                image: imageUrl,
+                attributes: nft.attributes,
+                metadataUri,
+                ipfsHash: result.IpfsHash,
+                isMinted: false,
+              },
+            });
+            console.log(`💾 NFT ${i + 1} saved to database`);
+          } catch (dbError) {
+            console.error(`❌ Failed to save NFT ${i + 1} to database:`, dbError);
+            // Continue with upload even if database save fails
+          }
 
           uploadedNFTs.push({
             tokenId: i + 1,

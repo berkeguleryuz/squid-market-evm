@@ -10,7 +10,7 @@ async function addLaunch() {
       data: {
         launchId: 0,
         contractAddress: '0xbc350383126fe41126e7987433283e7bd7e08f89',
-        launchpadAddress: '0x6CC9C89C78036f553F6969253D35F17a1CdD3870',
+        launchpadAddress: '0xDc3d053cBbfBC645641f3822029499dD8327d14E',
         name: 'Test Launch',
         symbol: 'TEST',
         description: 'Test Launch NFT Collection',

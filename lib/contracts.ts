@@ -58,12 +58,90 @@ export const LAUNCHPAD_ABI = [
       },
       {
         indexed: false,
+        internalType: "uint8",
+        name: "fromPhase",
+        type: "uint8",
+      },
+      { indexed: false, internalType: "uint8", name: "toPhase", type: "uint8" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "timestamp",
+        type: "uint256",
+      },
+    ],
+    name: "LaunchPhaseChanged",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "launchId",
+        type: "uint256",
+      },
+      { indexed: false, internalType: "uint8", name: "phase", type: "uint8" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "timestamp",
+        type: "uint256",
+      },
+    ],
+    name: "LaunchStarted",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "launchId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
         internalType: "enum LaunchpadCore.LaunchStatus",
         name: "newStatus",
         type: "uint8",
       },
     ],
     name: "LaunchStatusChanged",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "launchId",
+        type: "uint256",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "buyer",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
+      },
+      { indexed: false, internalType: "uint8", name: "phase", type: "uint8" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "price",
+        type: "uint256",
+      },
+    ],
+    name: "NFTPurchased",
     type: "event",
   },
   {
@@ -102,6 +180,44 @@ export const LAUNCHPAD_ABI = [
     anonymous: false,
     inputs: [
       {
+        indexed: true,
+        internalType: "uint256",
+        name: "launchId",
+        type: "uint256",
+      },
+      { indexed: false, internalType: "uint8", name: "phase", type: "uint8" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "price",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "startTime",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "endTime",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "maxPerWallet",
+        type: "uint256",
+      },
+    ],
+    name: "PhaseConfigured",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
         indexed: false,
         internalType: "address",
         name: "account",
@@ -110,6 +226,17 @@ export const LAUNCHPAD_ABI = [
     ],
     name: "Unpaused",
     type: "event",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "_launchId", type: "uint256" },
+      { internalType: "uint8", name: "_phase", type: "uint8" },
+      { internalType: "address[]", name: "_addresses", type: "address[]" },
+    ],
+    name: "addToWhitelist",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
   {
     inputs: [{ internalType: "uint256", name: "_launchId", type: "uint256" }],
@@ -121,6 +248,20 @@ export const LAUNCHPAD_ABI = [
   {
     inputs: [{ internalType: "uint256", name: "_launchId", type: "uint256" }],
     name: "completeLaunch",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "_launchId", type: "uint256" },
+      { internalType: "uint8", name: "_phase", type: "uint8" },
+      { internalType: "uint256", name: "_price", type: "uint256" },
+      { internalType: "uint256", name: "_startTime", type: "uint256" },
+      { internalType: "uint256", name: "_endTime", type: "uint256" },
+      { internalType: "uint256", name: "_maxPerWallet", type: "uint256" },
+    ],
+    name: "configurePhase",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -174,6 +315,13 @@ export const LAUNCHPAD_ABI = [
   },
   {
     inputs: [{ internalType: "uint256", name: "_launchId", type: "uint256" }],
+    name: "getCurrentPhase",
+    outputs: [{ internalType: "uint8", name: "", type: "uint8" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "_launchId", type: "uint256" }],
     name: "getLaunchInfo",
     outputs: [
       {
@@ -192,6 +340,7 @@ export const LAUNCHPAD_ABI = [
             type: "uint8",
           },
           { internalType: "bool", name: "autoProgress", type: "bool" },
+          { internalType: "uint8", name: "currentPhase", type: "uint8" },
         ],
         internalType: "struct LaunchpadCore.LaunchInfo",
         name: "",
@@ -202,9 +351,56 @@ export const LAUNCHPAD_ABI = [
     type: "function",
   },
   {
+    inputs: [
+      { internalType: "uint256", name: "_launchId", type: "uint256" },
+      { internalType: "uint8", name: "_phase", type: "uint8" },
+    ],
+    name: "getPhaseConfig",
+    outputs: [
+      { internalType: "uint256", name: "price", type: "uint256" },
+      { internalType: "uint256", name: "startTime", type: "uint256" },
+      { internalType: "uint256", name: "endTime", type: "uint256" },
+      { internalType: "uint256", name: "maxPerWallet", type: "uint256" },
+      { internalType: "uint256", name: "maxSupply", type: "uint256" },
+      { internalType: "uint256", name: "totalSold", type: "uint256" },
+      { internalType: "bool", name: "isConfigured", type: "bool" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "_launchId", type: "uint256" },
+      { internalType: "uint8", name: "_phase", type: "uint8" },
+      { internalType: "address", name: "_address", type: "address" },
+    ],
+    name: "isWhitelisted",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "launchCounter",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "", type: "uint256" },
+      { internalType: "uint8", name: "", type: "uint8" },
+    ],
+    name: "launchPhases",
+    outputs: [
+      { internalType: "uint256", name: "price", type: "uint256" },
+      { internalType: "uint256", name: "startTime", type: "uint256" },
+      { internalType: "uint256", name: "endTime", type: "uint256" },
+      { internalType: "uint256", name: "maxPerWallet", type: "uint256" },
+      { internalType: "uint256", name: "maxSupply", type: "uint256" },
+      { internalType: "uint256", name: "totalSold", type: "uint256" },
+      { internalType: "bool", name: "isConfigured", type: "bool" },
+    ],
     stateMutability: "view",
     type: "function",
   },
@@ -226,6 +422,7 @@ export const LAUNCHPAD_ABI = [
         type: "uint8",
       },
       { internalType: "bool", name: "autoProgress", type: "bool" },
+      { internalType: "uint8", name: "currentPhase", type: "uint8" },
     ],
     stateMutability: "view",
     type: "function",
@@ -256,6 +453,27 @@ export const LAUNCHPAD_ABI = [
     name: "platformFeePercentage",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "", type: "uint256" },
+      { internalType: "address", name: "", type: "address" },
+    ],
+    name: "purchaseCounts",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "_launchId", type: "uint256" },
+      { internalType: "uint8", name: "_phase", type: "uint8" },
+      { internalType: "address[]", name: "_addresses", type: "address[]" },
+    ],
+    name: "removeFromWhitelist",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -306,13 +524,24 @@ export const LAUNCHPAD_ABI = [
     stateMutability: "nonpayable",
     type: "function",
   },
+  {
+    inputs: [
+      { internalType: "uint256", name: "", type: "uint256" },
+      { internalType: "uint8", name: "", type: "uint8" },
+      { internalType: "address", name: "", type: "address" },
+    ],
+    name: "whitelists",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
 ] as const;
 
 export const MARKETPLACE_ABI = [
   {
     inputs: [
       {
-        internalType: "address payable",
+        internalType: "address",
         name: "_feeRecipient",
         type: "address",
       },
@@ -320,36 +549,66 @@ export const MARKETPLACE_ABI = [
     stateMutability: "nonpayable",
     type: "constructor",
   },
-  { inputs: [], name: "EnforcedPause", type: "error" },
-  { inputs: [], name: "ExpectedPause", type: "error" },
   {
-    inputs: [{ internalType: "address", name: "owner", type: "address" }],
+    inputs: [],
+    name: "EnforcedPause",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "ExpectedPause",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+    ],
     name: "OwnableInvalidOwner",
     type: "error",
   },
   {
-    inputs: [{ internalType: "address", name: "account", type: "address" }],
+    inputs: [
+      {
+        internalType: "address",
+        name: "account",
+        type: "address",
+      },
+    ],
     name: "OwnableUnauthorizedAccount",
     type: "error",
   },
-  { inputs: [], name: "ReentrancyGuardReentrantCall", type: "error" },
+  {
+    inputs: [],
+    name: "ReentrancyGuardReentrantCall",
+    type: "error",
+  },
   {
     anonymous: false,
     inputs: [
       {
         indexed: true,
         internalType: "uint256",
-        name: "listingId",
+        name: "launchId",
         type: "uint256",
       },
       {
-        indexed: false,
-        internalType: "uint256",
-        name: "newEndTime",
-        type: "uint256",
+        indexed: true,
+        internalType: "address",
+        name: "collection",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "creator",
+        type: "address",
       },
     ],
-    name: "AuctionExtended",
+    name: "LaunchCreated",
     type: "event",
   },
   {
@@ -358,20 +617,20 @@ export const MARKETPLACE_ABI = [
       {
         indexed: true,
         internalType: "uint256",
-        name: "listingId",
+        name: "launchId",
         type: "uint256",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "bidder",
-        type: "address",
       },
       {
         indexed: false,
-        internalType: "uint256",
-        name: "amount",
-        type: "uint256",
+        internalType: "uint8",
+        name: "fromPhase",
+        type: "uint8",
+      },
+      {
+        indexed: false,
+        internalType: "uint8",
+        name: "toPhase",
+        type: "uint8",
       },
       {
         indexed: false,
@@ -380,7 +639,7 @@ export const MARKETPLACE_ABI = [
         type: "uint256",
       },
     ],
-    name: "BidPlaced",
+    name: "LaunchPhaseChanged",
     type: "event",
   },
   {
@@ -389,11 +648,23 @@ export const MARKETPLACE_ABI = [
       {
         indexed: true,
         internalType: "uint256",
-        name: "listingId",
+        name: "launchId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint8",
+        name: "phase",
+        type: "uint8",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "timestamp",
         type: "uint256",
       },
     ],
-    name: "ItemCancelled",
+    name: "LaunchStarted",
     type: "event",
   },
   {
@@ -402,36 +673,17 @@ export const MARKETPLACE_ABI = [
       {
         indexed: true,
         internalType: "uint256",
-        name: "listingId",
-        type: "uint256",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "collection",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "uint256",
-        name: "tokenId",
+        name: "launchId",
         type: "uint256",
       },
       {
         indexed: false,
-        internalType: "address",
-        name: "seller",
-        type: "address",
+        internalType: "enum LaunchpadCore.LaunchStatus",
+        name: "newStatus",
+        type: "uint8",
       },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "price",
-        type: "uint256",
-      },
-      { indexed: false, internalType: "bool", name: "isAuction", type: "bool" },
     ],
-    name: "ItemListed",
+    name: "LaunchStatusChanged",
     type: "event",
   },
   {
@@ -440,60 +692,35 @@ export const MARKETPLACE_ABI = [
       {
         indexed: true,
         internalType: "uint256",
-        name: "listingId",
+        name: "launchId",
         type: "uint256",
       },
       {
         indexed: true,
-        internalType: "address",
-        name: "collection",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "uint256",
-        name: "tokenId",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "seller",
-        type: "address",
-      },
-      {
-        indexed: false,
         internalType: "address",
         name: "buyer",
         type: "address",
       },
       {
+        indexed: true,
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint8",
+        name: "phase",
+        type: "uint8",
+      },
+      {
         indexed: false,
         internalType: "uint256",
         name: "price",
         type: "uint256",
       },
     ],
-    name: "ItemSold",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "uint256",
-        name: "listingId",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "newPrice",
-        type: "uint256",
-      },
-    ],
-    name: "ItemUpdated",
+    name: "NFTPurchased",
     type: "event",
   },
   {
@@ -533,30 +760,42 @@ export const MARKETPLACE_ABI = [
     inputs: [
       {
         indexed: true,
-        internalType: "address",
-        name: "collection",
-        type: "address",
-      },
-      {
-        indexed: true,
         internalType: "uint256",
-        name: "tokenId",
+        name: "launchId",
         type: "uint256",
       },
       {
         indexed: false,
-        internalType: "address",
-        name: "recipient",
-        type: "address",
+        internalType: "uint8",
+        name: "phase",
+        type: "uint8",
       },
       {
         indexed: false,
         internalType: "uint256",
-        name: "amount",
+        name: "price",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "startTime",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "endTime",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "maxPerWallet",
         type: "uint256",
       },
     ],
-    name: "RoyaltyPaid",
+    name: "PhaseConfigured",
     type: "event",
   },
   {
@@ -573,131 +812,168 @@ export const MARKETPLACE_ABI = [
     type: "event",
   },
   {
-    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    name: "allCollections",
-    outputs: [{ internalType: "address", name: "", type: "address" }],
-    stateMutability: "view",
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_launchId",
+        type: "uint256",
+      },
+      {
+        internalType: "uint8",
+        name: "_phase",
+        type: "uint8",
+      },
+      {
+        internalType: "address[]",
+        name: "_addresses",
+        type: "address[]",
+      },
+    ],
+    name: "addToWhitelist",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
     inputs: [
-      { internalType: "uint256", name: "", type: "uint256" },
-      { internalType: "address", name: "", type: "address" },
+      {
+        internalType: "uint256",
+        name: "_launchId",
+        type: "uint256",
+      },
     ],
-    name: "auctionBids",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "auctionExtensionTime",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "_listingId", type: "uint256" }],
-    name: "buyItem",
-    outputs: [],
-    stateMutability: "payable",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "_listingId", type: "uint256" }],
-    name: "cancelListing",
+    name: "cancelLaunch",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
   },
   {
-    inputs: [{ internalType: "address", name: "", type: "address" }],
-    name: "collections",
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_launchId",
+        type: "uint256",
+      },
+    ],
+    name: "completeLaunch",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_launchId",
+        type: "uint256",
+      },
+      {
+        internalType: "uint8",
+        name: "_phase",
+        type: "uint8",
+      },
+      {
+        internalType: "uint256",
+        name: "_price",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "_startTime",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "_endTime",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "_maxPerWallet",
+        type: "uint256",
+      },
+    ],
+    name: "configurePhase",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "string",
+        name: "_name",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "_symbol",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "_description",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "_imageUri",
+        type: "string",
+      },
+      {
+        internalType: "uint256",
+        name: "_maxSupply",
+        type: "uint256",
+      },
+      {
+        internalType: "bool",
+        name: "_autoProgress",
+        type: "bool",
+      },
+    ],
+    name: "createLaunch",
     outputs: [
-      { internalType: "bool", name: "isVerified", type: "bool" },
-      { internalType: "uint256", name: "floorPrice", type: "uint256" },
-      { internalType: "uint256", name: "totalVolume", type: "uint256" },
-      { internalType: "uint256", name: "totalItems", type: "uint256" },
-      { internalType: "address", name: "creator", type: "address" },
+      {
+        internalType: "uint256",
+        name: "launchId",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    name: "creatorLaunches",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "defaultAuctionDuration",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "_listingId", type: "uint256" }],
-    name: "emergencyCancelListing",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "emergencyWithdraw",
-    outputs: [],
-    stateMutability: "nonpayable",
     type: "function",
   },
   {
     inputs: [],
     name: "feeRecipient",
-    outputs: [{ internalType: "address payable", name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "_listingId", type: "uint256" }],
-    name: "finalizeAuction",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "_collection", type: "address" },
-      { internalType: "uint256", name: "_offset", type: "uint256" },
-      { internalType: "uint256", name: "_limit", type: "uint256" },
-    ],
-    name: "getActiveListings",
     outputs: [
       {
-        components: [
-          { internalType: "uint256", name: "listingId", type: "uint256" },
-          { internalType: "address", name: "collection", type: "address" },
-          { internalType: "uint256", name: "tokenId", type: "uint256" },
-          { internalType: "address payable", name: "seller", type: "address" },
-          { internalType: "uint256", name: "price", type: "uint256" },
-          {
-            internalType: "enum Marketplace.ListingType",
-            name: "listingType",
-            type: "uint8",
-          },
-          {
-            internalType: "enum Marketplace.ListingStatus",
-            name: "status",
-            type: "uint8",
-          },
-          { internalType: "uint256", name: "createdAt", type: "uint256" },
-          { internalType: "uint256", name: "endTime", type: "uint256" },
-          { internalType: "address", name: "highestBidder", type: "address" },
-          { internalType: "uint256", name: "highestBid", type: "uint256" },
-          { internalType: "bool", name: "hasRoyalty", type: "bool" },
-          { internalType: "uint256", name: "royaltyAmount", type: "uint256" },
-          {
-            internalType: "address",
-            name: "royaltyRecipient",
-            type: "address",
-          },
-        ],
-        internalType: "struct Marketplace.Listing[]",
+        internalType: "address payable",
         name: "",
-        type: "tuple[]",
+        type: "address",
       },
     ],
     stateMutability: "view",
@@ -705,163 +981,360 @@ export const MARKETPLACE_ABI = [
   },
   {
     inputs: [],
-    name: "getAllCollections",
-    outputs: [{ internalType: "address[]", name: "", type: "address[]" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "address", name: "_collection", type: "address" }],
-    name: "getCollectionInfo",
+    name: "getActiveLaunches",
     outputs: [
       {
-        components: [
-          { internalType: "bool", name: "isVerified", type: "bool" },
-          { internalType: "uint256", name: "floorPrice", type: "uint256" },
-          { internalType: "uint256", name: "totalVolume", type: "uint256" },
-          { internalType: "uint256", name: "totalItems", type: "uint256" },
-          { internalType: "address", name: "creator", type: "address" },
-        ],
-        internalType: "struct Marketplace.CollectionInfo",
-        name: "",
-        type: "tuple",
+        internalType: "uint256[]",
+        name: "activeLaunches",
+        type: "uint256[]",
       },
     ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "_listingId", type: "uint256" }],
-    name: "getListing",
-    outputs: [
-      {
-        components: [
-          { internalType: "uint256", name: "listingId", type: "uint256" },
-          { internalType: "address", name: "collection", type: "address" },
-          { internalType: "uint256", name: "tokenId", type: "uint256" },
-          { internalType: "address payable", name: "seller", type: "address" },
-          { internalType: "uint256", name: "price", type: "uint256" },
-          {
-            internalType: "enum Marketplace.ListingType",
-            name: "listingType",
-            type: "uint8",
-          },
-          {
-            internalType: "enum Marketplace.ListingStatus",
-            name: "status",
-            type: "uint8",
-          },
-          { internalType: "uint256", name: "createdAt", type: "uint256" },
-          { internalType: "uint256", name: "endTime", type: "uint256" },
-          { internalType: "address", name: "highestBidder", type: "address" },
-          { internalType: "uint256", name: "highestBid", type: "uint256" },
-          { internalType: "bool", name: "hasRoyalty", type: "bool" },
-          { internalType: "uint256", name: "royaltyAmount", type: "uint256" },
-          {
-            internalType: "address",
-            name: "royaltyRecipient",
-            type: "address",
-          },
-        ],
-        internalType: "struct Marketplace.Listing",
-        name: "",
-        type: "tuple",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "_listingId", type: "uint256" }],
-    name: "getMinimumBid",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "address", name: "_user", type: "address" }],
-    name: "getUserListings",
-    outputs: [{ internalType: "uint256[]", name: "", type: "uint256[]" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "_listingId", type: "uint256" }],
-    name: "isAuctionEnded",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
     stateMutability: "view",
     type: "function",
   },
   {
     inputs: [
-      { internalType: "address", name: "_collection", type: "address" },
-      { internalType: "uint256", name: "_tokenId", type: "uint256" },
-      { internalType: "uint256", name: "_price", type: "uint256" },
       {
-        internalType: "enum Marketplace.ListingType",
-        name: "_listingType",
-        type: "uint8",
+        internalType: "address",
+        name: "_creator",
+        type: "address",
       },
-      { internalType: "uint256", name: "_auctionDuration", type: "uint256" },
     ],
-    name: "listItem",
-    outputs: [{ internalType: "uint256", name: "listingId", type: "uint256" }],
-    stateMutability: "nonpayable",
+    name: "getCreatorLaunches",
+    outputs: [
+      {
+        internalType: "uint256[]",
+        name: "",
+        type: "uint256[]",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
-    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    name: "listings",
-    outputs: [
-      { internalType: "uint256", name: "listingId", type: "uint256" },
-      { internalType: "address", name: "collection", type: "address" },
-      { internalType: "uint256", name: "tokenId", type: "uint256" },
-      { internalType: "address payable", name: "seller", type: "address" },
-      { internalType: "uint256", name: "price", type: "uint256" },
+    inputs: [
       {
-        internalType: "enum Marketplace.ListingType",
-        name: "listingType",
+        internalType: "uint256",
+        name: "_launchId",
+        type: "uint256",
+      },
+    ],
+    name: "getCurrentPhase",
+    outputs: [
+      {
+        internalType: "uint8",
+        name: "",
+        type: "uint8",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_launchId",
+        type: "uint256",
+      },
+    ],
+    name: "getLaunchInfo",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "address",
+            name: "collection",
+            type: "address",
+          },
+          {
+            internalType: "address",
+            name: "creator",
+            type: "address",
+          },
+          {
+            internalType: "string",
+            name: "name",
+            type: "string",
+          },
+          {
+            internalType: "string",
+            name: "symbol",
+            type: "string",
+          },
+          {
+            internalType: "string",
+            name: "description",
+            type: "string",
+          },
+          {
+            internalType: "string",
+            name: "imageUri",
+            type: "string",
+          },
+          {
+            internalType: "uint256",
+            name: "maxSupply",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "startTime",
+            type: "uint256",
+          },
+          {
+            internalType: "enum LaunchpadCore.LaunchStatus",
+            name: "status",
+            type: "uint8",
+          },
+          {
+            internalType: "bool",
+            name: "autoProgress",
+            type: "bool",
+          },
+          {
+            internalType: "uint8",
+            name: "currentPhase",
+            type: "uint8",
+          },
+        ],
+        internalType: "struct LaunchpadCore.LaunchInfo",
+        name: "",
+        type: "tuple",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_launchId",
+        type: "uint256",
+      },
+      {
+        internalType: "uint8",
+        name: "_phase",
+        type: "uint8",
+      },
+    ],
+    name: "getPhaseConfig",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "price",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "startTime",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "endTime",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "maxPerWallet",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "maxSupply",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "totalSold",
+        type: "uint256",
+      },
+      {
+        internalType: "bool",
+        name: "isConfigured",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_launchId",
+        type: "uint256",
+      },
+      {
+        internalType: "uint8",
+        name: "_phase",
         type: "uint8",
       },
       {
-        internalType: "enum Marketplace.ListingStatus",
+        internalType: "address",
+        name: "_address",
+        type: "address",
+      },
+    ],
+    name: "isWhitelisted",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "launchCounter",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+      {
+        internalType: "uint8",
+        name: "",
+        type: "uint8",
+      },
+    ],
+    name: "launchPhases",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "price",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "startTime",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "endTime",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "maxPerWallet",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "maxSupply",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "totalSold",
+        type: "uint256",
+      },
+      {
+        internalType: "bool",
+        name: "isConfigured",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    name: "launches",
+    outputs: [
+      {
+        internalType: "address",
+        name: "collection",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "creator",
+        type: "address",
+      },
+      {
+        internalType: "string",
+        name: "name",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "symbol",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "description",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "imageUri",
+        type: "string",
+      },
+      {
+        internalType: "uint256",
+        name: "maxSupply",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "startTime",
+        type: "uint256",
+      },
+      {
+        internalType: "enum LaunchpadCore.LaunchStatus",
         name: "status",
         type: "uint8",
       },
-      { internalType: "uint256", name: "createdAt", type: "uint256" },
-      { internalType: "uint256", name: "endTime", type: "uint256" },
-      { internalType: "address", name: "highestBidder", type: "address" },
-      { internalType: "uint256", name: "highestBid", type: "uint256" },
-      { internalType: "bool", name: "hasRoyalty", type: "bool" },
-      { internalType: "uint256", name: "royaltyAmount", type: "uint256" },
-      { internalType: "address", name: "royaltyRecipient", type: "address" },
+      {
+        internalType: "bool",
+        name: "autoProgress",
+        type: "bool",
+      },
+      {
+        internalType: "uint8",
+        name: "currentPhase",
+        type: "uint8",
+      },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "minimumBidIncrement",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "", type: "address" },
-      { internalType: "address", name: "", type: "address" },
-      { internalType: "uint256", name: "", type: "uint256" },
-      { internalType: "bytes", name: "", type: "bytes" },
-    ],
-    name: "onERC721Received",
-    outputs: [{ internalType: "bytes4", name: "", type: "bytes4" }],
-    stateMutability: "pure",
     type: "function",
   },
   {
     inputs: [],
     name: "owner",
-    outputs: [{ internalType: "address", name: "", type: "address" }],
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
     stateMutability: "view",
     type: "function",
   },
@@ -875,22 +1348,74 @@ export const MARKETPLACE_ABI = [
   {
     inputs: [],
     name: "paused",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "_listingId", type: "uint256" }],
-    name: "placeBid",
-    outputs: [],
-    stateMutability: "payable",
     type: "function",
   },
   {
     inputs: [],
     name: "platformFeePercentage",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    name: "purchaseCounts",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_launchId",
+        type: "uint256",
+      },
+      {
+        internalType: "uint8",
+        name: "_phase",
+        type: "uint8",
+      },
+      {
+        internalType: "address[]",
+        name: "_addresses",
+        type: "address[]",
+      },
+    ],
+    name: "removeFromWhitelist",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -902,7 +1427,11 @@ export const MARKETPLACE_ABI = [
   },
   {
     inputs: [
-      { internalType: "address payable", name: "_recipient", type: "address" },
+      {
+        internalType: "address payable",
+        name: "_feeRecipient",
+        type: "address",
+      },
     ],
     name: "setFeeRecipient",
     outputs: [],
@@ -910,38 +1439,39 @@ export const MARKETPLACE_ABI = [
     type: "function",
   },
   {
-    inputs: [{ internalType: "uint256", name: "_percentage", type: "uint256" }],
-    name: "setMinimumBidIncrement",
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_fee",
+        type: "uint256",
+      },
+    ],
+    name: "setPlatformFee",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "_percentage", type: "uint256" }],
-    name: "setPlatformFeePercentage",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "address", name: "", type: "address" }],
-    name: "supportedCollections",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
-    stateMutability: "view",
     type: "function",
   },
   {
     inputs: [
-      { internalType: "address", name: "", type: "address" },
-      { internalType: "uint256", name: "", type: "uint256" },
+      {
+        internalType: "uint256",
+        name: "_launchId",
+        type: "uint256",
+      },
     ],
-    name: "tokenToListing",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
+    name: "startLaunch",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
-    inputs: [{ internalType: "address", name: "newOwner", type: "address" }],
+    inputs: [
+      {
+        internalType: "address",
+        name: "newOwner",
+        type: "address",
+      },
+    ],
     name: "transferOwnership",
     outputs: [],
     stateMutability: "nonpayable",
@@ -956,32 +1486,31 @@ export const MARKETPLACE_ABI = [
   },
   {
     inputs: [
-      { internalType: "uint256", name: "_listingId", type: "uint256" },
-      { internalType: "uint256", name: "_newPrice", type: "uint256" },
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+      {
+        internalType: "uint8",
+        name: "",
+        type: "uint8",
+      },
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
     ],
-    name: "updatePrice",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "", type: "address" },
-      { internalType: "uint256", name: "", type: "uint256" },
+    name: "whitelists",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
     ],
-    name: "userListings",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "_collection", type: "address" },
-      { internalType: "bool", name: "_verified", type: "bool" },
-    ],
-    name: "verifyCollection",
-    outputs: [],
-    stateMutability: "nonpayable",
     type: "function",
   },
 ] as const;

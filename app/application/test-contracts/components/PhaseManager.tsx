@@ -1,55 +1,76 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
-import { 
-  usePhaseManagement,
-  usePhaseConfig 
-} from '@/lib/hooks/useContracts';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import { Settings, Loader2, Clock, DollarSign, Users, Target } from 'lucide-react';
-import { Address } from 'viem';
+import { useState, useEffect } from "react";
+import { useAccount } from "wagmi";
+import {
+  useConfigurePhase,
+  usePhaseConfig,
+} from "@/lib/hooks/usePhaseManagement";
+import { useWriteContract } from "wagmi";
+import { getContractAddress } from "@/lib/wagmi";
+import { NFT_COLLECTION_ABI } from "@/lib/contracts";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import {
+  Settings,
+  Loader2,
+  Clock,
+  DollarSign,
+  Users,
+  Target,
+} from "lucide-react";
+import { Address } from "viem";
 
 // Phase definitions
 const PHASES = {
   0: { name: "None", color: "bg-gray-500/20 text-gray-400", icon: "⚫" },
   1: { name: "Presale", color: "bg-blue-500/20 text-blue-400", icon: "🎯" },
-  2: { name: "Whitelist", color: "bg-purple-500/20 text-purple-400", icon: "👥" },
+  2: {
+    name: "Whitelist",
+    color: "bg-purple-500/20 text-purple-400",
+    icon: "👥",
+  },
   3: { name: "Public", color: "bg-green-500/20 text-green-400", icon: "🌍" },
 };
 
 interface PhaseManagerProps {
   selectedCollection: Address | null;
+  selectedLaunch: any | null;
   isLoading: string | null;
   onLoadingChange: (loading: string | null) => void;
 }
 
-export default function PhaseManager({ 
-  selectedCollection, 
-  isLoading, 
-  onLoadingChange 
+export default function PhaseManager({
+  selectedCollection,
+  selectedLaunch,
+  isLoading,
+  onLoadingChange,
 }: PhaseManagerProps) {
   const { address } = useAccount();
-  
+
   // Phase configuration state
   const [phaseToConfig, setPhaseToConfig] = useState(1);
-  const [phasePrice, setPhasePrice] = useState('0.01');
-  const [phaseStartTime, setPhaseStartTime] = useState('');
-  const [phaseEndTime, setPhaseEndTime] = useState('');
-  const [phaseMaxPerWallet, setPhaseMaxPerWallet] = useState('5');
-  const [phaseMaxSupply, setPhaseMaxSupply] = useState('50');
+  const [phasePrice, setPhasePrice] = useState("0.01");
+  const [phaseStartTime, setPhaseStartTime] = useState("");
+  const [phaseEndTime, setPhaseEndTime] = useState("");
+  const [phaseMaxPerWallet, setPhaseMaxPerWallet] = useState("5");
+  const [phaseMaxSupply, setPhaseMaxSupply] = useState("50");
 
   // Contract hooks
-  const { configurePhase, updateWhitelist, mintWithPhase } = usePhaseManagement(
-    selectedCollection || undefined,
-  );
+  const { configurePhase } = useConfigurePhase();
+  const { writeContractAsync } = useWriteContract();
   const { data: phaseConfigData, refetch: refetchPhaseConfig } = usePhaseConfig(
-    selectedCollection || undefined, 
+    selectedCollection ? Number(selectedCollection) : 0,
     phaseToConfig
   );
 
@@ -66,24 +87,26 @@ export default function PhaseManager({
   // Auto-refresh phase data when phase or collection changes
   useEffect(() => {
     if (selectedCollection && phaseToConfig) {
-      console.log(`🔄 Auto-refreshing phase ${phaseToConfig} data for collection ${selectedCollection}`);
+      console.log(
+        `🔄 Auto-refreshing phase ${phaseToConfig} data for collection ${selectedCollection}`
+      );
       setTimeout(() => refetchPhaseConfig(), 1000);
     }
   }, [selectedCollection, phaseToConfig, refetchPhaseConfig]);
 
   const handleAction = async (
     actionName: string,
-    action: () => Promise<string>,
+    action: () => Promise<string>
   ) => {
     onLoadingChange(actionName);
     try {
       const txHash = await action();
       toast.success(
-        `✅ ${actionName} successful! TX: ${txHash.slice(0, 10)}...`,
+        `✅ ${actionName} successful! TX: ${txHash.slice(0, 10)}...`
       );
 
       // Refresh phase config data
-      if (actionName.includes('Configure Phase')) {
+      if (actionName.includes("Configure Phase")) {
         setTimeout(() => refetchPhaseConfig(), 3000);
       }
     } catch (error: unknown) {
@@ -96,55 +119,89 @@ export default function PhaseManager({
     }
   };
 
-  const handleConfigurePhase = () => handleAction('Configure Phase', async () => {
-    if (!selectedCollection) throw new Error('No collection selected');
-    
-    const startTimestamp = Math.floor(new Date(phaseStartTime).getTime() / 1000);
-    const endTimestamp = Math.floor(new Date(phaseEndTime).getTime() / 1000);
-    
-    // Validation
-    if (startTimestamp >= endTimestamp) {
-      throw new Error('Start time must be before end time');
-    }
-    
-    if (parseFloat(phasePrice) <= 0) {
-      throw new Error('Price must be greater than 0');
-    }
-    
-    if (parseInt(phaseMaxPerWallet) <= 0) {
-      throw new Error('Max per wallet must be greater than 0');
-    }
-    
-    console.log(`🔧 Configuring ${PHASES[phaseToConfig as keyof typeof PHASES]?.name} phase for collection:`, selectedCollection);
-    console.log('⚙️ Phase config:', {
-      phase: phaseToConfig,
-      price: phasePrice,
-      startTime: new Date(startTimestamp * 1000).toLocaleString(),
-      endTime: new Date(endTimestamp * 1000).toLocaleString(),
-      maxPerWallet: parseInt(phaseMaxPerWallet),
-      maxSupply: parseInt(phaseMaxSupply)
+  const handleConfigurePhase = () =>
+    handleAction("Configure Phase", async () => {
+      if (!selectedCollection) throw new Error("No collection selected");
+
+      const startTimestamp = Math.floor(
+        new Date(phaseStartTime).getTime() / 1000
+      );
+      const endTimestamp = Math.floor(new Date(phaseEndTime).getTime() / 1000);
+
+      // Validation
+      if (startTimestamp >= endTimestamp) {
+        throw new Error("Start time must be before end time");
+      }
+
+      if (parseFloat(phasePrice) <= 0) {
+        throw new Error("Price must be greater than 0");
+      }
+
+      if (parseInt(phaseMaxPerWallet) <= 0) {
+        throw new Error("Max per wallet must be greater than 0");
+      }
+
+      console.log(
+        `🔧 Configuring ${
+          PHASES[phaseToConfig as keyof typeof PHASES]?.name
+        } phase for collection:`,
+        selectedCollection
+      );
+      console.log("⚙️ Phase config:", {
+        phase: phaseToConfig,
+        price: phasePrice,
+        startTime: new Date(startTimestamp * 1000).toLocaleString(),
+        endTime: new Date(endTimestamp * 1000).toLocaleString(),
+        maxPerWallet: parseInt(phaseMaxPerWallet),
+        maxSupply: parseInt(phaseMaxSupply),
+      });
+
+      // Debug parameters before calling configurePhase
+      const params = {
+        launchId: selectedLaunch?.launchId || 1,
+        phase: phaseToConfig,
+        price: phasePrice.toString(), // Ensure price is always string
+        startTime: startTimestamp,
+        endTime: endTimestamp,
+        maxPerWallet: parseInt(phaseMaxPerWallet),
+        maxSupply: parseInt(phaseMaxSupply),
+      };
+      console.log("🔍 configurePhase parameters:", params);
+      console.log("🔍 Parameter types:", {
+        launchId: typeof params.launchId,
+        phase: typeof params.phase,
+        price: typeof params.price,
+        startTime: typeof params.startTime,
+        endTime: typeof params.endTime,
+        maxPerWallet: typeof params.maxPerWallet,
+        maxSupply: typeof params.maxSupply,
+      });
+
+      const hash = await configurePhase(
+        params.launchId,
+        params.phase,
+        params.price,
+        params.startTime,
+        params.endTime,
+        params.maxPerWallet
+      );
+
+      console.log("📝 Transaction hash:", hash);
+      toast.info("⏳ Transaction submitted, waiting for confirmation...");
+      
+      // The success toast will be shown by the transaction receipt handler
+      console.log("✅ Phase configuration transaction submitted successfully");
+
+      return hash;
     });
-    
-    const hash = await configurePhase(
-      phaseToConfig,
-      phasePrice,
-      startTimestamp,
-      endTimestamp,
-      parseInt(phaseMaxPerWallet),
-      parseInt(phaseMaxSupply)
-    );
-    
-    // Extra success message with details
-    toast.success(`✅ ${PHASES[phaseToConfig as keyof typeof PHASES]?.name} phase configured! Price: ${phasePrice} ETH`);
-    
-    return hash;
-  });
 
   if (!selectedCollection) {
     return (
       <Card>
         <CardContent className="p-6 text-center">
-          <p className="text-muted-foreground">Select a launch to configure phases</p>
+          <p className="text-muted-foreground">
+            Select a launch to configure phases
+          </p>
         </CardContent>
       </Card>
     );
@@ -164,19 +221,24 @@ export default function PhaseManager({
           {/* Phase Selection */}
           <div>
             <label className="block text-sm font-medium mb-2">Phase Type</label>
-            <Select value={phaseToConfig.toString()} onValueChange={(value) => setPhaseToConfig(parseInt(value))}>
+            <Select
+              value={phaseToConfig.toString()}
+              onValueChange={(value) => setPhaseToConfig(parseInt(value))}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(PHASES).slice(1).map(([key, phase]) => (
-                  <SelectItem key={key} value={key}>
-                    <div className="flex items-center gap-2">
-                      <span>{phase.icon}</span>
-                      <span>{phase.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
+                {Object.entries(PHASES)
+                  .slice(1)
+                  .map(([key, phase]) => (
+                    <SelectItem key={key} value={key}>
+                      <div className="flex items-center gap-2">
+                        <span>{phase.icon}</span>
+                        <span>{phase.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -196,7 +258,7 @@ export default function PhaseManager({
                 onChange={(e) => setPhasePrice(e.target.value)}
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-2">
                 <Users className="h-4 w-4 inline mr-1" />
@@ -209,7 +271,7 @@ export default function PhaseManager({
                 onChange={(e) => setPhaseMaxPerWallet(e.target.value)}
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-2">
                 <Target className="h-4 w-4 inline mr-1" />
@@ -222,7 +284,7 @@ export default function PhaseManager({
                 onChange={(e) => setPhaseMaxSupply(e.target.value)}
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-2">
                 <Clock className="h-4 w-4 inline mr-1" />
@@ -234,7 +296,7 @@ export default function PhaseManager({
                 onChange={(e) => setPhaseStartTime(e.target.value)}
               />
             </div>
-            
+
             <div className="md:col-span-2">
               <label className="block text-sm font-medium mb-2">
                 <Clock className="h-4 w-4 inline mr-1" />
@@ -250,10 +312,10 @@ export default function PhaseManager({
 
           <Button
             onClick={handleConfigurePhase}
-            disabled={isLoading === 'Configure Phase'}
+            disabled={isLoading === "Configure Phase"}
             className="w-full"
           >
-            {isLoading === 'Configure Phase' ? (
+            {isLoading === "Configure Phase" ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Configuring...
@@ -261,7 +323,10 @@ export default function PhaseManager({
             ) : (
               <>
                 <Settings className="h-4 w-4 mr-2" />
-                Configure {PHASES[phaseToConfig as keyof typeof PHASES]?.name} Phase
+                Configure {
+                  PHASES[phaseToConfig as keyof typeof PHASES]?.name
+                }{" "}
+                Phase
               </>
             )}
           </Button>
@@ -273,33 +338,51 @@ export default function PhaseManager({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Badge className={PHASES[phaseToConfig as keyof typeof PHASES]?.color}>
-                {PHASES[phaseToConfig as keyof typeof PHASES]?.icon} {PHASES[phaseToConfig as keyof typeof PHASES]?.name}
+              <Badge
+                className={PHASES[phaseToConfig as keyof typeof PHASES]?.color}
+              >
+                {PHASES[phaseToConfig as keyof typeof PHASES]?.icon}{" "}
+                {PHASES[phaseToConfig as keyof typeof PHASES]?.name}
               </Badge>
               Current Configuration
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Price:</span>
-                <p className="font-medium">{phaseConfigData.price} ETH</p>
+            {phaseConfigData && Array.isArray(phaseConfigData) ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Price:</span>
+                  <p className="font-medium">
+                    {phaseConfigData[0]
+                      ? (Number(phaseConfigData[0]) / 1e18).toFixed(4)
+                      : "0"}{" "}
+                    ETH
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Max per Wallet:</span>
+                  <p className="font-medium">
+                    {phaseConfigData[3] ? Number(phaseConfigData[3]) : "0"}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Max Supply:</span>
+                  <p className="font-medium">
+                    {phaseConfigData[4] ? Number(phaseConfigData[4]) : "0"}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Status:</span>
+                  <Badge variant={phaseConfigData[6] ? "default" : "secondary"}>
+                    {phaseConfigData[6] ? "Configured" : "Not Configured"}
+                  </Badge>
+                </div>
               </div>
-              <div>
-                <span className="text-muted-foreground">Max per Wallet:</span>
-                <p className="font-medium">{phaseConfigData.maxPerWallet}</p>
+            ) : (
+              <div className="text-center text-muted-foreground py-4">
+                <p>Loading phase configuration...</p>
               </div>
-              <div>
-                <span className="text-muted-foreground">Max Supply:</span>
-                <p className="font-medium">{phaseConfigData.maxSupply}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Status:</span>
-                <Badge variant={phaseConfigData.isActive ? "default" : "secondary"}>
-                  {phaseConfigData.isActive ? "Active" : "Inactive"}
-                </Badge>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       )}

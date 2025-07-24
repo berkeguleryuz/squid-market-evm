@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -7,17 +7,17 @@ const prisma = new PrismaClient();
 export async function GET() {
   try {
     const launchPools = await prisma.launchPool.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json({
       success: true,
-      data: launchPools
+      data: launchPools,
     });
   } catch (error) {
-    console.error('Error fetching launch pools:', error);
+    console.error("Error fetching launch pools:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch launch pools' },
+      { success: false, error: "Failed to fetch launch pools" },
       { status: 500 }
     );
   }
@@ -27,7 +27,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     const {
       launchId,
       contractAddress,
@@ -38,14 +38,46 @@ export async function POST(request: NextRequest) {
       imageUri,
       maxSupply,
       creator,
-      status = 'PENDING',
-      autoProgress = false
+      status = "PENDING",
+      autoProgress = false,
     } = body;
 
+    // Debug logging
+    console.log("🔍 API Request Body:", {
+      launchId,
+      contractAddress,
+      launchpadAddress,
+      name,
+      symbol,
+      description,
+      imageUri,
+      maxSupply,
+      creator,
+      status,
+      autoProgress,
+    });
+
     // Validate required fields
-    if (!launchId || !contractAddress || !launchpadAddress || !name || !symbol || !maxSupply || !creator) {
+    if (
+      !launchId ||
+      !contractAddress ||
+      !launchpadAddress ||
+      !name ||
+      !symbol ||
+      !maxSupply ||
+      !creator
+    ) {
+      console.error("❌ Missing required fields:", {
+        launchId: !!launchId,
+        contractAddress: !!contractAddress,
+        launchpadAddress: !!launchpadAddress,
+        name: !!name,
+        symbol: !!symbol,
+        maxSupply: !!maxSupply,
+        creator: !!creator,
+      });
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { success: false, error: "Missing required fields" },
         { status: 400 }
       );
     }
@@ -58,22 +90,22 @@ export async function POST(request: NextRequest) {
         name,
         symbol,
         description: description || `${name} NFT Collection`,
-        imageUri: imageUri || 'https://via.placeholder.com/400x400?text=NFT',
+        imageUri: imageUri || "https://via.placeholder.com/400x400?text=NFT",
         maxSupply: parseInt(maxSupply),
         creator,
         status,
-        autoProgress
-      }
+        autoProgress,
+      },
     });
 
     return NextResponse.json({
       success: true,
-      data: launchPool
+      data: launchPool,
     });
   } catch (error) {
-    console.error('Error creating launch pool:', error);
+    console.error("Error creating launch pool:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create launch pool' },
+      { success: false, error: "Failed to create launch pool" },
       { status: 500 }
     );
   }
@@ -87,7 +119,7 @@ export async function PUT(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: 'Launch pool ID is required' },
+        { success: false, error: "Launch pool ID is required" },
         { status: 400 }
       );
     }
@@ -101,17 +133,17 @@ export async function PUT(request: NextRequest) {
 
     const launchPool = await prisma.launchPool.update({
       where: { id },
-      data: updateData
+      data: updateData,
     });
 
     return NextResponse.json({
       success: true,
-      data: launchPool
+      data: launchPool,
     });
   } catch (error) {
-    console.error('Error updating launch pool:', error);
+    console.error("Error updating launch pool:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update launch pool' },
+      { success: false, error: "Failed to update launch pool" },
       { status: 500 }
     );
   }

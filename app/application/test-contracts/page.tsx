@@ -68,9 +68,9 @@ export default function TestContractsPage() {
 
       {/* Main Content */}
       <Tabs defaultValue="launches" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="launches">Launch Management</TabsTrigger>
-          <TabsTrigger value="phases">Phase Configuration</TabsTrigger>
+          {/* <TabsTrigger value="phases">Phase Configuration</TabsTrigger> */}
           <TabsTrigger value="monitor">Supply Monitor</TabsTrigger>
         </TabsList>
 

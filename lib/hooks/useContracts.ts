@@ -296,15 +296,6 @@ export const useLaunchInfo = (launchId?: number) => {
     query: { enabled: launchId !== undefined },
   });
 
-  // Debug logging
-  console.log(`🔍 useLaunchInfo(${launchId}) result:`, {
-    data: result.data,
-    isLoading: result.isLoading,
-    error: result.error,
-    launchpadAddress: launchpad,
-    enabled: launchId !== undefined
-  });
-
   return result;
 };
 
@@ -315,14 +306,6 @@ export const useActiveLaunches = () => {
     address: launchpad,
     abi: LAUNCHPAD_ABI,
     functionName: "getActiveLaunches",
-  });
-
-  // Debug logging
-  console.log("🔍 useActiveLaunches result:", {
-    data: result.data,
-    isLoading: result.isLoading,
-    error: result.error,
-    launchpadAddress: launchpad,
   });
 
   return result;
@@ -518,88 +501,13 @@ export const useCollectionStats = (collectionAddress?: Address) => {
   return { totalSupply, maxSupply, currentPhase, collectionInfo };
 };
 
-// 🔧 PHASE MANAGEMENT
-export const usePhaseManagement = (collectionAddress?: Address) => {
-  const { writeContractAsync } = useWriteContract();
+// 🔧 PHASE MANAGEMENT - REMOVED
+// This hook was incorrect - it sent transactions to NFT contract instead of LaunchpadCore
+// Use useConfigurePhase from usePhaseManagement.ts instead
 
-  const configurePhase = async (
-    phase: number,
-    price: string,
-    startTime: number,
-    endTime: number,
-    maxPerWallet: number,
-    maxSupply: number
-  ) => {
-    if (!collectionAddress) throw new Error("Collection address required");
-
-    const hash = await writeContractAsync({
-      address: collectionAddress,
-      abi: NFT_COLLECTION_ABI,
-      functionName: "configurePhase",
-      args: [
-        phase,
-        parseEther(price),
-        BigInt(startTime),
-        BigInt(endTime),
-        BigInt(maxPerWallet),
-        BigInt(maxSupply),
-      ],
-    });
-
-    return hash;
-  };
-
-  const updateWhitelist = async (
-    phase: number,
-    addresses: Address[],
-    status: boolean
-  ) => {
-    if (!collectionAddress) throw new Error("Collection address required");
-
-    const hash = await writeContractAsync({
-      address: collectionAddress,
-      abi: NFT_COLLECTION_ABI,
-      functionName: "updateWhitelist",
-      args: [phase, addresses, status],
-    });
-
-    return hash;
-  };
-
-  const mintWithPhase = async (
-    to: Address,
-    phase: number,
-    tokenURI: string,
-    price: string
-  ) => {
-    if (!collectionAddress) throw new Error("Collection address required");
-
-    const hash = await writeContractAsync({
-      address: collectionAddress,
-      abi: NFT_COLLECTION_ABI,
-      functionName: "mintNFT",
-      args: [to, phase, tokenURI],
-      value: parseEther(price),
-    });
-
-    return hash;
-  };
-
-  return { configurePhase, updateWhitelist, mintWithPhase };
-};
-
-// 📊 PHASE INFO READING
-export const usePhaseConfig = (collectionAddress?: Address, phase?: number) => {
-  return useReadContract({
-    address: collectionAddress,
-    abi: NFT_COLLECTION_ABI,
-    functionName: "phaseConfigs",
-    args: phase !== undefined ? [phase] : undefined,
-    query: {
-      enabled: !!collectionAddress && phase !== undefined,
-    },
-  });
-};
+// 📊 PHASE INFO READING - REMOVED
+// This hook was incorrect - use usePhaseConfig from usePhaseManagement.ts instead
+// The correct hook uses launchPhases mapping, not getPhaseConfig function
 
 // 🚀 ENHANCED LAUNCH OPERATIONS
 export const useLaunchOperations = () => {
