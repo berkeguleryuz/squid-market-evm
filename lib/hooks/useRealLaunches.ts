@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Address } from "viem";
 import { useActiveLaunches, useLaunchInfo } from "./useContracts";
 
@@ -42,29 +42,7 @@ export function useRealLaunches() {
     refetch: refetchLaunches,
   } = useActiveLaunches();
 
-  useEffect(() => {
-    // Always include launch ID 0 (user's created launch)
-    const launchIdsToFetch = [BigInt(0)];
-
-    // Add any other active launches if they exist
-    if (activeLaunchIds && Array.isArray(activeLaunchIds)) {
-      activeLaunchIds.forEach((id) => {
-        if (id !== BigInt(0)) {
-          launchIdsToFetch.push(id);
-        }
-      });
-    }
-
-    fetchLaunchDetails(launchIdsToFetch);
-  }, [activeLaunchIds, isLoadingLaunches]);
-
-  useEffect(() => {
-    if (launchesError) {
-      setError(launchesError.message || "Failed to fetch launches");
-    }
-  }, [launchesError]);
-
-  const fetchLaunchDetails = async (launchIds: readonly bigint[]) => {
+  const fetchLaunchDetails = useCallback(async (launchIds: readonly bigint[]) => {
     setIsLoading(true);
     setError(null);
 
@@ -88,49 +66,56 @@ export function useRealLaunches() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    console.log('🔍 useRealLaunches effect triggered:', {
+      isLoadingLaunches,
+      activeLaunchIds,
+      activeLaunchIdsType: typeof activeLaunchIds,
+      activeLaunchIdsArray: Array.isArray(activeLaunchIds)
+    });
+    
+    if (isLoadingLaunches) {
+      console.log('⏳ Still loading launches from contract...');
+      return;
+    }
+    
+    // Use all active launches from contract
+    const launchIdsToFetch: readonly bigint[] = activeLaunchIds && Array.isArray(activeLaunchIds) 
+      ? activeLaunchIds 
+      : [];
+
+    console.log('🔄 Fetching launches:', {
+      rawIds: activeLaunchIds,
+      processedIds: launchIdsToFetch.map(id => Number(id)),
+      count: launchIdsToFetch.length
+    });
+    
+    if (launchIdsToFetch.length === 0) {
+      console.log('⚠️ No active launches found in contract!');
+      setLaunches([]);
+      setIsLoading(false);
+      return;
+    }
+    
+    fetchLaunchDetails(launchIdsToFetch);
+  }, [activeLaunchIds, isLoadingLaunches, fetchLaunchDetails]);
+
+  useEffect(() => {
+    if (launchesError) {
+      setError(launchesError.message || "Failed to fetch launches");
+    }
+  }, [launchesError]);
 
   const fetchSingleLaunch = async (
     launchId: number,
   ): Promise<RealLaunch | null> => {
     try {
-      // For launch ID 0, we know the basic info from the transaction
-      if (launchId === 0) {
-        // Try to get real contract data, fallback to known info
-        const baseInfo = {
-          id: "0",
-          launchId: 0,
-          collection: "0x0b56DfDBAa52933791B9E4fc5000102e12c6a9A3" as Address,
-          creator: "0x726965AD57752b79aF2C0Db0E5b08Fe00328dd8B" as Address,
-          name: "Test Collection 1753138959628",
-          symbol: "TEST",
-          description: "A test NFT collection created from the launchpad",
-          imageUri: "/squid1.jpg",
-          maxSupply: 100,
-          startTime: Date.now(),
-          autoProgress: true,
-          currentPhase: "Unknown",
-          totalRaised: "0",
-          createdAt: new Date(),
-          progress: 0,
-        };
-
-        // Try to get real status from contract - this will update based on actual contract state
-        // For now return base info, but status will be updated by useRealLaunch hook
-        return {
-          ...baseInfo,
-          status: 0, // Will be updated by contract call
-          isActive: false, // Will be updated by contract call
-          info: {
-            status: 0,
-            collection: baseInfo.collection,
-            creator: baseInfo.creator,
-            startTime: baseInfo.startTime,
-            maxSupply: baseInfo.maxSupply,
-          },
-        };
-      }
-
+      console.log(`📡 Fetching real contract data for launch ${launchId}`);
+      
+      // This will be implemented by calling the actual contract
+      // For now, return null to let useRealLaunch handle individual launches
       return null;
     } catch (err) {
       console.error(`Error fetching launch ${launchId}:`, err);
@@ -213,36 +198,10 @@ export function useRealLaunch(launchId: number) {
 
       console.log("📊 Processed launch:", processedLaunch);
       setLaunch(processedLaunch);
-    } else if (!isLoadingLaunch && launchId === 0) {
-      // Fallback for launch 0 if contract call fails
-      console.log("⚠️ Using fallback data for launch 0");
-      setLaunch({
-        id: "0",
-        launchId: 0,
-        collection: "0x0b56DfDBAa52933791B9E4fc5000102e12c6a9A3" as Address,
-        creator: "0x726965AD57752b79aF2C0Db0E5b08Fe00328dd8B" as Address,
-        name: "Test Collection 1753138959628",
-        symbol: "TEST",
-        description:
-          "A test NFT collection created from the launchpad - Check contract for real status",
-        imageUri: "/squid1.jpg",
-        maxSupply: 100,
-        startTime: Date.now(),
-        status: 1, // Assume ACTIVE since user started it twice
-        autoProgress: true,
-        isActive: true, // Assume active
-        currentPhase: "Active",
-        totalRaised: "0",
-        info: {
-          status: 1,
-          collection: "0x0b56DfDBAa52933791B9E4fc5000102e12c6a9A3" as Address,
-          creator: "0x726965AD57752b79aF2C0Db0E5b08Fe00328dd8B" as Address,
-          startTime: Date.now(),
-          maxSupply: 100,
-        },
-        createdAt: new Date(),
-        progress: 10,
-      });
+    } else if (!isLoadingLaunch && !launchData) {
+      // No data available from contract
+      console.log(`⚠️ No contract data available for launch ${launchId}`);
+      setLaunch(null);
     }
 
     setIsLoading(isLoadingLaunch);

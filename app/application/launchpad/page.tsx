@@ -5,27 +5,22 @@ import {
   Rocket, 
   Plus, 
   Clock, 
-  Users, 
-  TrendingUp, 
-  Calendar,
   Coins,
   CheckCircle,
-  Timer,
   Target,
   Zap,
   Loader2,
   Play,
-  Pause,
   ExternalLink,
   RefreshCw
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
-import { useRealLaunches, useRealLaunch, RealLaunch } from '@/lib/hooks/useRealLaunches';
+import { useRealLaunches, RealLaunch } from '@/lib/hooks/useRealLaunches';
 import { useLaunchpadContract } from '@/lib/hooks/useContracts';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
@@ -36,21 +31,23 @@ export default function LaunchpadPage() {
   const { address, isConnected } = useAccount();
   const { launches, isLoading, error, refetch } = useRealLaunches();
   const { startLaunch } = useLaunchpadContract();
-  
-  // Get real data for launch 0
-  const { launch: launch0, isLoading: isLoadingLaunch0, refetch: refetchLaunch0 } = useRealLaunch(0);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Auto-refresh launches every 10 seconds when component is active
+    const interval = setInterval(() => {
+      if (!isLoading) {
+        console.log('🔄 Auto-refreshing launches...');
+        refetch();
+      }
+    }, 10000);
+    
+    return () => clearInterval(interval);
+  }, [isLoading, refetch]);
 
-  // Merge real launch data with launches array
-  const allLaunches = launches.map(launch => {
-    if (launch.launchId === 0 && launch0) {
-      return launch0; // Use real contract data for launch 0
-    }
-    return launch;
-  });
+  // Use launches directly from useRealLaunches (now fetches all active launches)
+  const allLaunches = launches || [];
 
   if (!mounted) {
     return (
@@ -71,10 +68,11 @@ export default function LaunchpadPage() {
       const txHash = await startLaunch(launchId);
       toast.success(`Launch started! TX: ${txHash.slice(0, 10)}...`);
       
-      // Refresh both general launches and specific launch data
-      await Promise.all([refetch(), refetchLaunch0()]);
-      
-      toast.info('Data refreshed - launch status should update shortly');
+      // Refresh launches data
+      setTimeout(() => {
+        refetch();
+        toast.info('Data refreshed - launch status should update shortly');
+      }, 3000);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to start launch';
       console.error('Start launch failed:', error);
@@ -87,9 +85,9 @@ export default function LaunchpadPage() {
   const handleRefreshData = async () => {
     setActionLoading('refresh');
     try {
-      await Promise.all([refetch(), refetchLaunch0()]);
+      await refetch();
       toast.success('Data refreshed!');
-    } catch (error) {
+    } catch {
       toast.error('Failed to refresh data');
     } finally {
       setActionLoading(null);
@@ -121,25 +119,17 @@ export default function LaunchpadPage() {
             
             {/* Real-time status */}
             <div className="text-sm text-white/60 mb-4">
-              {launch0 && (
-                <div className="flex items-center justify-center gap-4">
-                  <span>Your Launch Status: </span>
-                  <Badge 
-                    variant={launch0.isActive ? "default" : "secondary"}
-                    className={launch0.isActive ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}
-                  >
-                    {launch0.currentPhase}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleRefreshData}
-                    disabled={actionLoading === 'refresh'}
-                  >
-                    <RefreshCw className={`h-4 w-4 ${actionLoading === 'refresh' ? 'animate-spin' : ''}`} />
-                  </Button>
-                </div>
-              )}
+              <div className="flex items-center justify-center gap-4">
+                <span>Active Launches: {allLaunches.filter(l => l.isActive).length}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRefreshData}
+                  disabled={actionLoading === 'refresh'}
+                >
+                  <RefreshCw className={`h-4 w-4 ${actionLoading === 'refresh' ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -178,14 +168,13 @@ export default function LaunchpadPage() {
           </div>
 
           {/* Debug Info */}
-          {process.env.NODE_ENV === 'development' && launch0 && (
+          {process.env.NODE_ENV === 'development' && allLaunches.length > 0 && (
             <div className="glass p-4 rounded-lg mb-8 text-sm">
               <div className="text-white/60 mb-2">🐛 Debug Info:</div>
-              <div className="grid grid-cols-2 gap-4 text-xs">
-                <div>Status: {launch0.status} ({launch0.currentPhase})</div>
-                <div>Active: {launch0.isActive ? 'Yes' : 'No'}</div>
-                <div>Collection: {launch0.collection}</div>
-                <div>Creator: {launch0.creator}</div>
+              <div className="text-xs space-y-1">
+                <div>Total Launches: {allLaunches.length}</div>
+                <div>Active: {allLaunches.filter(l => l.isActive).length}</div>
+                <div>Completed: {allLaunches.filter(l => l.status === 2).length}</div>
               </div>
             </div>
           )}
@@ -219,7 +208,7 @@ export default function LaunchpadPage() {
       <section className="pb-32">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           {/* Loading State */}
-          {(isLoading || isLoadingLaunch0) && (
+          {isLoading && (
             <div className="text-center py-20">
               <Loader2 className="h-12 w-12 mx-auto mb-6 animate-spin text-neon-cyan" />
               <h3 className="font-exo2 text-2xl font-bold mb-4 text-white">Loading Launches...</h3>
@@ -245,7 +234,7 @@ export default function LaunchpadPage() {
           )}
 
           {/* No Launches */}
-          {!isLoading && !isLoadingLaunch0 && !error && filteredLaunches.length === 0 && (
+          {!isLoading && !error && filteredLaunches.length === 0 && (
             <div className="text-center py-20">
               <div className="w-24 h-24 mx-auto mb-6 bg-white/5 rounded-full flex items-center justify-center">
                 <Rocket className="h-10 w-10 text-white/40" />
@@ -268,7 +257,7 @@ export default function LaunchpadPage() {
           )}
 
           {/* Launches Grid */}
-          {!isLoading && !isLoadingLaunch0 && !error && filteredLaunches.length > 0 && (
+          {!isLoading && !error && filteredLaunches.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredLaunches.map((launch) => (
                 <LaunchCard 
