@@ -1,7 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import { Address } from "viem";
-import { useActiveLaunches, useCreatorLaunches, useLaunchInfo } from "./useContracts";
-import { useAccount } from "wagmi";
 
 export interface RealLaunch {
   id: string;
@@ -34,155 +32,95 @@ export function useRealLaunches() {
   const [launches, setLaunches] = useState<RealLaunch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { address } = useAccount();
 
-  // Fetch both active launches and creator launches for comprehensive admin view
-  const {
-    data: activeLaunchIds,
-    isLoading: isLoadingActive,
-    error: activeLaunchesError,
-    refetch: refetchActiveLaunches,
-  } = useActiveLaunches();
-
-  const {
-    data: creatorLaunchIds,
-    isLoading: isLoadingCreator,
-    error: creatorLaunchesError,
-    refetch: refetchCreatorLaunches,
-  } = useCreatorLaunches(address);
-
-  const fetchSingleLaunch = useCallback(async (
-    launchId: number,
-  ): Promise<RealLaunch | null> => {
+  // Fetch launches from database (only active ones for launchpad)
+  const fetchLaunchesFromDatabase = useCallback(async (): Promise<RealLaunch[]> => {
     try {
-      console.log(`📡 Fetching real contract data for launch ${launchId}`);
+      console.log('🔄 Fetching active launches from database...');
+      const response = await fetch('/api/launchpools');
+      const result = await response.json();
       
-      // Note: Real contract data fetching will be handled by useRealLaunch hook
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch launches');
+      }
       
-      // For now, we'll create a simplified launch object
-      // The actual data fetching will be handled by individual useRealLaunch hooks
-      const simpleLaunch: RealLaunch = {
-        id: launchId.toString(),
-        launchId,
-        collection: '0x0000000000000000000000000000000000000000' as Address,
-        creator: '0x0000000000000000000000000000000000000000' as Address,
-        name: `Launch ${launchId}`,
-        symbol: `L${launchId}`,
-        description: `Launch ${launchId} description`,
-        imageUri: '',
-        maxSupply: 100,
-        startTime: Date.now(),
-        status: 1, // ACTIVE
-        autoProgress: false,
-        isActive: true,
-        currentPhase: 'Active',
+      // Filter for active launches only
+      const activeLaunches = result.data.filter((launch: any) => launch.status === 'ACTIVE');
+      
+      console.log('✅ Found active launches:', activeLaunches.length);
+      
+      // Transform database data to RealLaunch format
+      return activeLaunches.map((launch: any) => ({
+        id: launch.id,
+        launchId: launch.launchId,
+        collection: (launch.contractAddress || launch.collectionAddress) as Address,
+        creator: launch.creator as Address,
+        name: launch.name,
+        symbol: launch.symbol,
+        description: launch.description || '',
+        imageUri: (launch.imageUri || launch.imageUrl) || '',
+        maxSupply: launch.maxSupply,
+        startTime: new Date(launch.createdAt).getTime() / 1000,
+        status: launch.status === 'ACTIVE' ? 1 : 0,
+        autoProgress: launch.autoProgress || false,
+        isActive: launch.status === 'ACTIVE',
+        currentPhase: 'public',
         totalRaised: '0',
         info: {
-          status: 1,
-          collection: '0x0000000000000000000000000000000000000000' as Address,
-          creator: '0x0000000000000000000000000000000000000000' as Address,
-          startTime: Date.now(),
-          maxSupply: 100,
+          status: launch.status === 'ACTIVE' ? 1 : 0,
+          collection: (launch.contractAddress || launch.collectionAddress) as Address,
+          creator: launch.creator as Address,
+          startTime: new Date(launch.createdAt).getTime() / 1000,
+          maxSupply: launch.maxSupply,
         },
-        createdAt: new Date(),
+        createdAt: new Date(launch.createdAt),
         progress: 0,
-      };
-      
-      return simpleLaunch;
+      }));
     } catch (err) {
-      console.error(`Error fetching launch ${launchId}:`, err);
-      return null;
+      console.error('❌ Error fetching launches from database:', err);
+      throw err;
     }
   }, []);
 
-  const fetchLaunchDetails = useCallback(async (launchIds: readonly bigint[]) => {
-    setIsLoading(true);
-    setError(null);
-
+  // Fetch launch details on mount and set up auto-refresh
+  const fetchLaunchDetails = useCallback(async () => {
     try {
-      const launchPromises = launchIds.map(async (launchId) => {
-        return fetchSingleLaunch(Number(launchId));
-      });
-
-      const results = await Promise.allSettled(launchPromises);
-      const validLaunches = results
-        .filter(
-          (result): result is PromiseFulfilledResult<RealLaunch | null> =>
-            result.status === "fulfilled" && result.value !== null,
-        )
-        .map((result) => result.value!);
-
-      setLaunches(validLaunches);
+      setIsLoading(true);
+      setError(null);
+      
+      const launchData = await fetchLaunchesFromDatabase();
+      setLaunches(launchData);
+      
+      console.log('✅ Successfully loaded active launches:', launchData.length);
     } catch (err) {
-      console.error("Error fetching launch details:", err);
-      setError("Failed to fetch launch details");
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch launches';
+      console.error('❌ Error in fetchLaunchDetails:', errorMessage);
+      setError(errorMessage);
+      setLaunches([]);
     } finally {
       setIsLoading(false);
     }
-  }, [fetchSingleLaunch]);
+  }, [fetchLaunchesFromDatabase]);
 
+  // Load active launches on mount
   useEffect(() => {
-    const isLoading = isLoadingActive || isLoadingCreator;
-    
-    console.log('🔍 useRealLaunches effect triggered:', {
-      isLoadingActive,
-      isLoadingCreator,
-      isLoading,
-      activeLaunchIds,
-      creatorLaunchIds,
-      address
-    });
-    
-    if (isLoading) {
-      console.log('⏳ Still loading launches from contract...');
-      return;
-    }
-    
-    // Use creator launches as primary source (includes PENDING and ACTIVE)
-    // Active launches only includes ACTIVE status launches
-    const activeIds = activeLaunchIds && Array.isArray(activeLaunchIds) ? activeLaunchIds : [];
-    const creatorIds = creatorLaunchIds && Array.isArray(creatorLaunchIds) ? creatorLaunchIds : [];
-    
-    // Prioritize creator launches for admin interface (shows all launches by creator)
-    // Then add any additional active launches not created by this user
-    const primaryIds = creatorIds.length > 0 ? creatorIds : activeIds;
-    const secondaryIds = creatorIds.length > 0 ? activeIds : [];
-    
-    // Merge and deduplicate launch IDs
-    const allIds = [...primaryIds, ...secondaryIds];
-    const uniqueIds = Array.from(new Set(allIds.map(id => Number(id)))).map(id => BigInt(id));
+    fetchLaunchDetails();
+  }, [fetchLaunchDetails]);
 
-    console.log('🔄 Fetching launches (Admin View):', {
-      activeIds: activeIds.map(id => Number(id)),
-      creatorIds: creatorIds.map(id => Number(id)),
-      primarySource: creatorIds.length > 0 ? 'creator' : 'active',
-      uniqueIds: uniqueIds.map(id => Number(id)),
-      count: uniqueIds.length
-    });
-    
-    if (uniqueIds.length === 0) {
-      console.log('⚠️ No launches found in contract!');
-      setLaunches([]);
-      setIsLoading(false);
-      return;
-    }
-
-    fetchLaunchDetails(uniqueIds);
-  }, [activeLaunchIds, creatorLaunchIds, isLoadingActive, isLoadingCreator, fetchLaunchDetails, address]);
-
-  // Handle errors
+  // Auto-refresh every 30 seconds
   useEffect(() => {
-    const error = activeLaunchesError || creatorLaunchesError;
-    if (error) {
-      setError(error.message || 'Failed to fetch launches');
-    }
-  }, [activeLaunchesError, creatorLaunchesError]);
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing active launches...');
+      fetchLaunchDetails();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchLaunchDetails]);
 
   const refetch = useCallback(() => {
-    console.log('🔄 Refetching launches...');
-    refetchActiveLaunches();
-    refetchCreatorLaunches();
-  }, [refetchActiveLaunches, refetchCreatorLaunches]);
+    console.log('🔄 Manual refetch requested...');
+    fetchLaunchDetails();
+  }, [fetchLaunchDetails]);
 
   return {
     launches,
@@ -198,88 +136,14 @@ export function useRealLaunch(launchId: number) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const {
-    data: launchData,
-    isLoading: isLoadingLaunch,
-    error: launchError,
-    refetch: refetchLaunchData,
-  } = useLaunchInfo(launchId);
-
   useEffect(() => {
-    // Handle contract errors for invalid launch IDs
-    if (launchError) {
-      console.error(`❌ Contract error for launch ${launchId}:`, launchError);
-      setLaunch(null);
-      setError(`Launch ${launchId} is invalid or corrupted`);
-      setIsLoading(false);
-      return;
-    }
+    console.log(`⚠️ useRealLaunch called for launch ${launchId} - using database fallback`);
+    setLaunch(null);
+    setError('Individual launch fetching not implemented - use useRealLaunches instead');
+    setIsLoading(false);
+  }, [launchId]);
 
-    if (launchData && Array.isArray(launchData) && launchData.length >= 10) {
-      console.log(
-        "🔍 Real contract data for launch",
-        launchId,
-        ":",
-        launchData,
-      );
-
-      const [
-        collection,
-        creator,
-        name,
-        symbol,
-        description,
-        imageUri,
-        maxSupply,
-        startTime,
-        status,
-        autoProgress,
-      ] = launchData;
-
-      const processedLaunch: RealLaunch = {
-        id: launchId.toString(),
-        launchId: launchId,
-        collection: collection as Address,
-        creator: creator as Address,
-        name: name as string,
-        symbol: symbol as string,
-        description: description as string,
-        imageUri: imageUri as string,
-        maxSupply: Number(maxSupply),
-        startTime: Number(startTime),
-        status: Number(status),
-        autoProgress: autoProgress as boolean,
-        isActive: Number(status) === 1, // ACTIVE
-        currentPhase: getPhaseText(Number(status)),
-        totalRaised: "0", // TODO: Calculate from contract
-        info: {
-          status: Number(status),
-          collection: collection as Address,
-          creator: creator as Address,
-          startTime: Number(startTime),
-          maxSupply: Number(maxSupply),
-        },
-        createdAt: new Date(Number(startTime) * 1000),
-        progress: calculateProgress(Number(status), Number(maxSupply), 0),
-      };
-
-      console.log("📊 Processed launch:", processedLaunch);
-      setLaunch(processedLaunch);
-    } else if (!isLoadingLaunch && !launchData) {
-      // No data available from contract
-      console.log(`⚠️ No contract data available for launch ${launchId}`);
-      setLaunch(null);
-    }
-
-    setIsLoading(isLoadingLaunch);
-
-    if (launchError) {
-      setError(launchError.message || "Failed to fetch launch");
-      console.error("Launch fetch error:", launchError);
-    }
-  }, [launchData, isLoadingLaunch, launchError, launchId]);
-
-  return { launch, isLoading, error, refetch: refetchLaunchData };
+  return { launch, isLoading, error, refetch: () => {} };
 }
 
 // Helper functions

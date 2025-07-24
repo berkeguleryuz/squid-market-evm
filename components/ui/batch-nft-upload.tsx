@@ -44,12 +44,17 @@ export function BatchNFTUpload({
 }: BatchNFTUploadProps) {
   const [nfts, setNfts] = useState<NFTMetadata[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [collectionDescription, setCollectionDescription] =
-    useState<string>("");
+  const [collectionNameState, setCollectionNameState] = useState("");
+  const [collectionDescription, setCollectionDescription] = useState("");
+  const [fullMetadata, setFullMetadata] = useState<any[]>([]);
+  
+  // Check if max supply is reached
+  const isMaxSupplyReached = nfts.length >= maxSupply;
+  const remainingSlots = maxSupply - nfts.length;
 
   // Add single NFT
   const addNFT = useCallback(() => {
-    if (nfts.length >= maxSupply) {
+    if (isMaxSupplyReached) {
       toast.error(`Maximum supply of ${maxSupply} NFTs reached`);
       return;
     }
@@ -71,12 +76,15 @@ export function BatchNFTUpload({
   }, []);
 
   // Update NFT
-  const updateNFT = useCallback((id: number | undefined, updates: Partial<NFTMetadata>) => {
-    if (id === undefined) return;
-    setNfts((prev) =>
-      prev.map((nft) => (nft.id === id ? { ...nft, ...updates } : nft))
-    );
-  }, []);
+  const updateNFT = useCallback(
+    (id: number | undefined, updates: Partial<NFTMetadata>) => {
+      if (id === undefined) return;
+      setNfts((prev) =>
+        prev.map((nft) => (nft.id === id ? { ...nft, ...updates } : nft))
+      );
+    },
+    []
+  );
 
   // Generate batch NFTs
   const generateBatch = useCallback(
@@ -157,8 +165,7 @@ export function BatchNFTUpload({
     [maxSupply]
   );
 
-  // Store full metadata for matching
-  const [fullMetadata, setFullMetadata] = useState<any[]>([]);
+  // Store full metadata for matching (already declared above)
 
   // Handle metadata.json upload
   const handleMetadataUpload = useCallback(async (file: File) => {
@@ -285,48 +292,53 @@ export function BatchNFTUpload({
 
         // Set initial NFTs with blob URLs
         setNfts([...nfts, ...imageNFTs]);
-        
+
         // Start uploading images to IPFS immediately
-        toast.info('Uploading images to IPFS...');
-        
+        toast.info("Uploading images to IPFS...");
+
         // Upload images progressively and update UI
         for (let i = 0; i < imageNFTs.length; i++) {
           const nft = imageNFTs[i];
           const file = imageFiles[i];
-          
+
           try {
             // Upload individual image to IPFS
             const formData = new FormData();
-            formData.append('file', file);
-            
-            const uploadResponse = await fetch('/api/upload-image', {
-              method: 'POST',
+            formData.append("file", file);
+
+            const uploadResponse = await fetch("/api/upload-image", {
+              method: "POST",
               body: formData,
             });
-            
+
             const uploadResult = await uploadResponse.json();
-            
+
             if (uploadResult.success && uploadResult.ipfsUrl) {
               // Update the NFT with IPFS URL in the state
-              setNfts(currentNfts => 
-                currentNfts.map(currentNft => 
+              setNfts((currentNfts) =>
+                currentNfts.map((currentNft) =>
                   currentNft.id === nft.id && currentNft.image === nft.image
-                    ? { 
-                        ...currentNft, 
+                    ? {
+                        ...currentNft,
                         image: uploadResult.ipfsUrl,
                         isUploading: false,
-                        ipfsUploaded: true 
+                        ipfsUploaded: true,
                       }
                     : currentNft
                 )
               );
-              
-              console.log(`✅ Image uploaded to IPFS for NFT #${nft.id}: ${uploadResult.ipfsUrl}`);
+
+              console.log(
+                `✅ Image uploaded to IPFS for NFT #${nft.id}: ${uploadResult.ipfsUrl}`
+              );
             } else {
-              console.error(`❌ Failed to upload image for NFT #${nft.id}:`, uploadResult.error);
+              console.error(
+                `❌ Failed to upload image for NFT #${nft.id}:`,
+                uploadResult.error
+              );
               // Mark as failed but keep blob URL
-              setNfts(currentNfts => 
-                currentNfts.map(currentNft => 
+              setNfts((currentNfts) =>
+                currentNfts.map((currentNft) =>
                   currentNft.id === nft.id && currentNft.image === nft.image
                     ? { ...currentNft, isUploading: false, uploadFailed: true }
                     : currentNft
@@ -334,10 +346,13 @@ export function BatchNFTUpload({
               );
             }
           } catch (error) {
-            console.error(`❌ Error uploading image for NFT #${nft.id}:`, error);
+            console.error(
+              `❌ Error uploading image for NFT #${nft.id}:`,
+              error
+            );
             // Mark as failed but keep blob URL
-            setNfts(currentNfts => 
-              currentNfts.map(currentNft => 
+            setNfts((currentNfts) =>
+              currentNfts.map((currentNft) =>
                 currentNft.id === nft.id && currentNft.image === nft.image
                   ? { ...currentNft, isUploading: false, uploadFailed: true }
                   : currentNft
@@ -533,7 +548,7 @@ export function BatchNFTUpload({
           variant="outline"
           size="sm"
           onClick={() => document.getElementById("metadata-upload")?.click()}
-          className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+          disabled={isMaxSupplyReached}
         >
           <Upload className="h-4 w-4 mr-1" />
           Load Metadata.json
@@ -544,6 +559,7 @@ export function BatchNFTUpload({
           variant="outline"
           size="sm"
           onClick={() => document.getElementById("json-upload")?.click()}
+          disabled={isMaxSupplyReached}
         >
           <Upload className="h-4 w-4 mr-1" />
           Upload JSON
@@ -555,6 +571,7 @@ export function BatchNFTUpload({
           size="sm"
           onClick={() => document.getElementById("multi-json-upload")?.click()}
           className="bg-blue-50 hover:bg-blue-100 border-blue-200"
+          disabled={isMaxSupplyReached}
         >
           <Upload className="h-4 w-4 mr-1" />
           Upload Multiple JSONs
@@ -566,6 +583,7 @@ export function BatchNFTUpload({
           size="sm"
           onClick={() => document.getElementById("multi-image-upload")?.click()}
           className="bg-green-50 hover:bg-green-100 border-green-200"
+          disabled={isMaxSupplyReached}
         >
           <Image className="h-4 w-4 mr-1" />
           Upload Images
@@ -624,31 +642,56 @@ export function BatchNFTUpload({
         />
       </div>
 
+      {/* Max Supply Status */}
+      {isMaxSupplyReached && (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-2 text-green-800">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="font-medium">Collection Complete!</span>
+          </div>
+          <p className="mt-1 text-sm text-green-700">
+            Maximum supply of {maxSupply} NFTs reached. No more NFTs can be added to this collection.
+          </p>
+        </div>
+      )}
+
       {/* Upload Progress Summary */}
       {nfts.length > 0 && (
         <div className="mb-4 p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center justify-between text-sm">
             <span>IPFS Upload Progress:</span>
             <span>
-              {nfts.filter(nft => nft.ipfsUploaded).length} / {nfts.length} uploaded
-              {nfts.some(nft => nft.isUploading) && (
+              {nfts.filter((nft) => nft.ipfsUploaded).length} / {nfts.length}{" "}
+              uploaded
+              {nfts.some((nft) => nft.isUploading) && (
                 <span className="ml-2 text-blue-600">Uploading...</span>
               )}
-              {nfts.some(nft => nft.uploadFailed) && (
+              {nfts.some((nft) => nft.uploadFailed) && (
                 <span className="ml-2 text-red-600">
-                  ({nfts.filter(nft => nft.uploadFailed).length} failed)
+                  ({nfts.filter((nft) => nft.uploadFailed).length} failed)
                 </span>
               )}
             </span>
           </div>
           <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-            <div 
+            <div
               className="bg-green-600 h-2 rounded-full transition-all duration-300"
-              style={{ 
-                width: `${(nfts.filter(nft => nft.ipfsUploaded).length / nfts.length) * 100}%` 
+              style={{
+                width: `${
+                  (nfts.filter((nft) => nft.ipfsUploaded).length /
+                    nfts.length) *
+                  100
+                }%`,
               }}
             ></div>
           </div>
+          {!isMaxSupplyReached && (
+            <p className="mt-2 text-xs text-gray-600">
+              {remainingSlots} slots remaining (Max: {maxSupply})
+            </p>
+          )}
         </div>
       )}
 
@@ -671,26 +714,42 @@ export function BatchNFTUpload({
                       <Image className="h-6 w-6 text-gray-400" />
                     </div>
                   )}
-                  
+
                   {/* Upload Status Indicator */}
                   {nft.isUploading && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                     </div>
                   )}
-                  
+
                   {nft.ipfsUploaded && (
                     <div className="absolute top-1 right-1 bg-green-500 rounded-full p-1">
-                      <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      <svg
+                        className="w-2 h-2 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     </div>
                   )}
-                  
+
                   {nft.uploadFailed && (
                     <div className="absolute top-1 right-1 bg-red-500 rounded-full p-1">
-                      <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      <svg
+                        className="w-2 h-2 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     </div>
                   )}

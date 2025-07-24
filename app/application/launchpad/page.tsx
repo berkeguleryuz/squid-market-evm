@@ -159,7 +159,7 @@ export default function LaunchpadPage() {
 
           {/* Create Launch Button */}
           <div className="text-center mb-12">
-            <Link href="/test-contracts">
+            <Link href="/application/test-contracts">
               <Button className="btn-cyber px-8 py-4 rounded-xl font-inter font-semibold flex items-center space-x-3 mx-auto">
                 <Plus className="h-5 w-5" />
                 <span>Create New Launch</span>
@@ -248,7 +248,7 @@ export default function LaunchpadPage() {
                   : `No launches match the ${filter} filter.`
                 }
               </p>
-              <Link href="/test-contracts">
+              <Link href="/application/test-contracts">
                 <Button className="btn-cyber px-6 py-3 rounded-xl font-inter font-semibold">
                   Create First Launch
                 </Button>
@@ -351,15 +351,19 @@ function LaunchCard({ launch, onStartLaunch, isLoading, isOwner }: LaunchCardPro
         {/* Collection Address */}
         <div className="flex items-center justify-between text-sm text-white/60 mb-6">
           <span>Collection:</span>
-          <a 
-            href={`https://sepolia.etherscan.io/address/${launch.collection}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-mono text-neon-cyan hover:text-neon-cyan/80 flex items-center gap-1"
-          >
-            {launch.collection.slice(0, 6)}...{launch.collection.slice(-4)}
-            <ExternalLink className="h-3 w-3" />
-          </a>
+          {launch.collection ? (
+            <a
+              href={`https://sepolia.etherscan.io/address/${launch.collection}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-neon-cyan hover:text-neon-cyan/80 flex items-center gap-1"
+            >
+              {launch.collection.slice(0, 6)}...{launch.collection.slice(-4)}
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          ) : (
+            <span className="font-mono text-gray-500">No address</span>
+          )}
         </div>
 
         {/* Actions */}
@@ -386,7 +390,7 @@ function LaunchCard({ launch, onStartLaunch, isLoading, isOwner }: LaunchCardPro
               asChild
               className="w-full bg-green-500 text-white border border-green-400 hover:bg-green-600 rounded-lg font-inter font-semibold"
             >
-              <Link href={`/test-contracts`}>
+              <Link href={`/application/test-contracts`}>
                 <Coins className="h-4 w-4 mr-2 text-white" />
                 <span className="text-white">Mint NFTs (Set Price First)</span>
               </Link>
@@ -398,7 +402,7 @@ function LaunchCard({ launch, onStartLaunch, isLoading, isOwner }: LaunchCardPro
             variant="outline"
             className="w-full border-white/40 text-white bg-white/10 hover:bg-white/20 hover:text-white rounded-lg"
           >
-            <Link href={`/test-contracts`}>
+            <Link href={`/application/test-contracts`}>
               <span className="text-white">View Details & Set Mint Price</span>
             </Link>
           </Button>
