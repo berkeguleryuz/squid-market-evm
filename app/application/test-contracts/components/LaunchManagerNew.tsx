@@ -33,6 +33,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { BatchNFTUpload } from "@/components/ui/batch-nft-upload";
+import { WhitelistManager } from "@/components/ui/whitelist-manager";
+import { LaunchOverview } from "@/components/ui/launch-overview";
 import PhaseManager from "./PhaseManager";
 import { toast } from "sonner";
 import {
@@ -547,85 +549,7 @@ export default function LaunchManagerNew({
                                   value="overview"
                                   className="space-y-4"
                                 >
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                      <Label className="text-sm font-medium">
-                                        Launch Details
-                                      </Label>
-                                      <div className="bg-gray-50 p-3 rounded-lg space-y-1">
-                                        <p>
-                                          <strong>Name:</strong>{" "}
-                                          {selectedLaunchData.name}
-                                        </p>
-                                        <p>
-                                          <strong>Symbol:</strong>{" "}
-                                          {selectedLaunchData.symbol}
-                                        </p>
-                                        <p>
-                                          <strong>Supply:</strong>{" "}
-                                          {selectedLaunchData.maxSupply}
-                                        </p>
-                                        <p>
-                                          <strong>Status:</strong>
-                                          <Badge
-                                            className={`ml-2 ${
-                                              STATUS_COLORS[
-                                                selectedLaunchData.status
-                                              ]
-                                            }`}
-                                          >
-                                            {selectedLaunchData.status}
-                                          </Badge>
-                                        </p>
-                                      </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label className="text-sm font-medium">
-                                        Contract Info
-                                      </Label>
-                                      <div className="bg-gray-50 p-3 rounded-lg space-y-1">
-                                        <p>
-                                          <strong>Launch ID:</strong>{" "}
-                                          {selectedLaunchData.launchId}
-                                        </p>
-                                        <p>
-                                          <strong>Collection:</strong>
-                                          <code className="text-xs bg-gray-200 px-1 rounded ml-1">
-                                            {selectedLaunchData.contractAddress.slice(
-                                              0,
-                                              20
-                                            )}
-                                            ...
-                                          </code>
-                                        </p>
-                                        <p>
-                                          <strong>Creator:</strong>
-                                          <code className="text-xs bg-gray-200 px-1 rounded ml-1">
-                                            {selectedLaunchData.creator.slice(
-                                              0,
-                                              20
-                                            )}
-                                            ...
-                                          </code>
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {selectedLaunchData.imageUri && (
-                                    <div className="space-y-2">
-                                      <Label className="text-sm font-medium">
-                                        Cover Image
-                                      </Label>
-                                      <div className="w-48 h-48 bg-gray-100 rounded-lg overflow-hidden">
-                                        <img
-                                          src={selectedLaunchData.imageUri}
-                                          alt={selectedLaunchData.name}
-                                          className="w-full h-full object-cover"
-                                        />
-                                      </div>
-                                    </div>
-                                  )}
+                                  <LaunchOverview launchData={selectedLaunchData} />
                                 </TabsContent>
 
                                 {/* Phase Configuration Tab */}
@@ -646,14 +570,20 @@ export default function LaunchManagerNew({
                                       </p>
                                     </div>
                                   ) : (
-                                    <PhaseManager
-                                      selectedCollection={
-                                        selectedLaunchData.contractAddress as Address
-                                      }
-                                      selectedLaunch={selectedLaunchData}
-                                      isLoading={isLoading}
-                                      onLoadingChange={onLoadingChange}
-                                    />
+                                    <div className="space-y-6">
+                                      <PhaseManager
+                                        selectedCollection={
+                                          selectedLaunchData.contractAddress as Address
+                                        }
+                                        selectedLaunch={selectedLaunchData}
+                                        isLoading={isLoading}
+                                        onLoadingChange={onLoadingChange}
+                                      />
+                                      <WhitelistManager
+                                        launchId={selectedLaunchData.launchId}
+                                        collectionAddress={selectedLaunchData.contractAddress as Address}
+                                      />
+                                    </div>
                                   )}
                                 </TabsContent>
 

@@ -5,10 +5,11 @@ const prisma = new PrismaClient();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { launchId: string } }
+  { params }: { params: Promise<{ launchId: string }> }
 ) {
   try {
-    const launchId = parseInt(params.launchId);
+    const { launchId: launchIdParam } = await params;
+    const launchId = parseInt(launchIdParam);
 
     if (isNaN(launchId)) {
       return NextResponse.json(
@@ -48,10 +49,11 @@ export async function GET(
 // Mark NFT as minted
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { launchId: string } }
+  { params }: { params: Promise<{ launchId: string }> }
 ) {
   try {
-    const launchId = parseInt(params.launchId);
+    const { launchId: launchIdParam } = await params;
+    const launchId = parseInt(launchIdParam);
     const { tokenId, mintedTo } = await request.json();
 
     if (isNaN(launchId) || !tokenId || !mintedTo) {

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Coins, Loader2, Plus, Minus } from "lucide-react";
 import { Address } from "viem";
-import { usePhaseConfig, usePurchaseNFT } from "@/lib/hooks/usePhaseManagement";
+import { usePhaseConfig, usePurchaseNFT, useWhitelistStatus, Phase } from "@/lib/hooks/usePhaseManagement";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -46,13 +46,39 @@ export function DynamicMintButton({
   const { purchaseNFT, hash, isPending, isConfirming, isSuccess } =
     usePurchaseNFT();
 
+  // Whitelist status checks for each phase
+  const { data: isPresaleWhitelisted } = useWhitelistStatus(launchId, Phase.PRESALE);
+  const { data: isWhitelistPhaseWhitelisted } = useWhitelistStatus(launchId, Phase.WHITELIST);
+
+  // Check if user is eligible to mint in current phase
+  const isEligibleToMint = () => {
+    if (currentPhase === 3) {
+      // Public phase - everyone can mint
+      return true;
+    } else if (currentPhase === 1) {
+      // Presale phase - must be whitelisted
+      return Boolean(isPresaleWhitelisted);
+    } else if (currentPhase === 2) {
+      // Whitelist phase - must be whitelisted
+      return Boolean(isWhitelistPhaseWhitelisted);
+    }
+    return false;
+  };
+
   // Debug logging
   console.log("🔍 DynamicMintButton Debug:", {
     launchId,
+    collectionAddress,
     launchStatus,
+    isConfigured,
+    currentPhase,
+    currentPrice,
     presaleConfig,
     whitelistConfig,
     publicConfig,
+    isPresaleWhitelisted,
+    isWhitelistPhaseWhitelisted,
+    isEligibleToMint: isEligibleToMint(),
   });
 
   useEffect(() => {
@@ -164,10 +190,18 @@ export function DynamicMintButton({
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
-        <Button className={className} disabled={!isConfigured}>
+        <Button 
+          className={className} 
+          disabled={!isConfigured || !isEligibleToMint()}
+        >
           <Coins className="h-4 w-4 mr-2 text-white" />
           <span className="text-white">
-            {isConfigured ? "Mint NFTs" : "Mint NFTs (Set Price First)"}
+            {!isConfigured 
+              ? "Mint NFTs (Set Price First)"
+              : !isEligibleToMint()
+              ? "Not Whitelisted"
+              : "Mint NFTs"
+            }
           </span>
         </Button>
       </DialogTrigger>

@@ -44,6 +44,12 @@ contract LaunchpadCore is Ownable, ReentrancyGuard, Pausable {
         uint8 phase,
         uint256 price
     );
+    event WhitelistUpdated(
+        uint256 indexed launchId,
+        uint8 indexed phase,
+        address indexed user,
+        bool isWhitelisted
+    );
 
     // Enums
     enum LaunchStatus {
@@ -370,6 +376,7 @@ contract LaunchpadCore is Ownable, ReentrancyGuard, Pausable {
 
         for (uint256 i = 0; i < _addresses.length; i++) {
             whitelists[_launchId][_phase][_addresses[i]] = true;
+            emit WhitelistUpdated(_launchId, _phase, _addresses[i], true);
         }
     }
 
@@ -390,6 +397,7 @@ contract LaunchpadCore is Ownable, ReentrancyGuard, Pausable {
 
         for (uint256 i = 0; i < _addresses.length; i++) {
             whitelists[_launchId][_phase][_addresses[i]] = false;
+            emit WhitelistUpdated(_launchId, _phase, _addresses[i], false);
         }
     }
 

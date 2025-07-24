@@ -253,6 +253,24 @@ export const useStartLaunchWithPhases = () => {
   };
 };
 
+// Hook to check if user is whitelisted for a specific phase
+export const useWhitelistStatus = (launchId: number, phase: Phase, userAddress?: Address) => {
+  const launchpad = useMemo(() => getContractAddress("LAUNCHPAD"), []);
+  const { address } = useAccount();
+  const addressToCheck = userAddress || address;
+
+  return useReadContract({
+    address: launchpad,
+    abi: LAUNCHPAD_ABI,
+    functionName: "isWhitelisted",
+    args: [BigInt(launchId), phase, addressToCheck as Address],
+    query: {
+      enabled: Boolean(launchId > 0 && phase > 0 && addressToCheck),
+      refetchInterval: 30000, // Refetch every 30 seconds
+    },
+  });
+};
+
 // Hook to purchase NFT in current phase
 export const usePurchaseNFT = () => {
   const { writeContract, data: hash, isPending } = useWriteContract();

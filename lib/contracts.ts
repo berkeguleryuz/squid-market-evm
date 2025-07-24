@@ -228,6 +228,37 @@ export const LAUNCHPAD_ABI = [
     type: "event",
   },
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "launchId",
+        type: "uint256",
+      },
+      {
+        indexed: true,
+        internalType: "uint8",
+        name: "phase",
+        type: "uint8",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "user",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "bool",
+        name: "isWhitelisted",
+        type: "bool",
+      },
+    ],
+    name: "WhitelistUpdated",
+    type: "event",
+  },
+  {
     inputs: [
       { internalType: "uint256", name: "_launchId", type: "uint256" },
       { internalType: "uint8", name: "_phase", type: "uint8" },

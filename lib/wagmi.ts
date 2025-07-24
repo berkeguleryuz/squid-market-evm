@@ -4,7 +4,7 @@ import { Address } from "viem";
 
 // Contract addresses for Sepolia testnet only
 export const CONTRACT_ADDRESSES: Record<string, Address> = {
-  LAUNCHPAD: "0x87763147AeA7a9903af63518Aa85D00Ae0FB68f0" as Address, // ✅ LaunchpadCore with Automatic setLaunchpadContract - Deployed
+  LAUNCHPAD: "0x0765C0Cc2C96267879a70346E662eeECc67B7f38" as Address, // ✅ LaunchpadCore with Automatic setLaunchpadContract - Deployed
   MARKETPLACE: "0x4c37452412Aed0ef80A68980Dc555E9EcB46277A" as Address, // ✅ Deployed & Verified
   PAYMENT_HANDLER: "0xe362BE87d431bDA6EE84CAB3d8c4C88d8213E9bA" as Address, // ✅ Deployed & Verified
   NFT_COLLECTION: "0xE6C16bF41Fb43278C5AD59dacB69381643689E8A" as Address, // ✅ Deployed & Verified
@@ -19,7 +19,7 @@ export const CHAIN_CONFIG = {
 
 export const config = getDefaultConfig({
   appName: "Squid Market",
-  projectId: "c33b21c2ba3fbef73b4bfef2e8b0bba0", // Updated WalletConnect Project ID
+  projectId: "7504c75ad44ced16476ec45c5e7709fa", // Test WalletConnect Project ID - Replace with your own
   chains: [sepolia], // Only Sepolia
   ssr: true,
 });

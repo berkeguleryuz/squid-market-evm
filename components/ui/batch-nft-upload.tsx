@@ -401,7 +401,6 @@ export function BatchNFTUpload({
               .filter(
                 (item) =>
                   item.name &&
-                  item.description &&
                   typeof item.id !== "undefined"
               )
               .map((item, index) => ({
@@ -411,7 +410,7 @@ export function BatchNFTUpload({
 
             allNFTs = [...allNFTs, ...validNFTs];
             successCount++;
-          } else if (data.name && data.description) {
+          } else if (data.name) {
             // Handle single NFT object
             allNFTs.push({
               ...data,
