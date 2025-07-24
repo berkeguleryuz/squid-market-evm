@@ -288,13 +288,24 @@ export const useLaunchpadContract = () => {
 export const useLaunchInfo = (launchId?: number) => {
   const launchpad = useMemo(() => getContractAddress("LAUNCHPAD"), []);
 
-  return useReadContract({
+  const result = useReadContract({
     address: launchpad,
     abi: LAUNCHPAD_ABI,
     functionName: "getLaunchInfo",
     args: launchId !== undefined ? [BigInt(launchId)] : undefined,
     query: { enabled: launchId !== undefined },
   });
+
+  // Debug logging
+  console.log(`🔍 useLaunchInfo(${launchId}) result:`, {
+    data: result.data,
+    isLoading: result.isLoading,
+    error: result.error,
+    launchpadAddress: launchpad,
+    enabled: launchId !== undefined
+  });
+
+  return result;
 };
 
 export const useActiveLaunches = () => {

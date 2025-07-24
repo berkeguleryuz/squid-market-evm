@@ -1,27 +1,32 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
+import { useState, useEffect } from "react";
+import { useAccount } from "wagmi";
 import { 
   useLaunchpadContract,
   useLaunchOperations,
-  useCreatorLaunches,
 } from '@/lib/hooks/useContracts';
-import { useRealLaunch } from '@/lib/hooks/useRealLaunches';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import { Rocket, Play, Square, CheckCircle, XCircle } from 'lucide-react';
-import { Address } from 'viem';
+import { useDatabaseLaunches, useDatabaseLaunch, updateLaunchStatus } from '@/lib/hooks/useDatabaseLaunches';
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { Rocket, Play, Square, CheckCircle, XCircle } from "lucide-react";
+import { Address } from "viem";
 
 // Launch status mapping
 const LAUNCH_STATUS = {
-  0: { name: 'Created', color: 'bg-gray-500' },
-  1: { name: 'Started', color: 'bg-blue-500' },
-  2: { name: 'Completed', color: 'bg-green-500' },
-  3: { name: 'Cancelled', color: 'bg-red-500' },
+  0: { name: "Created", color: "bg-gray-500" },
+  1: { name: "Started", color: "bg-blue-500" },
+  2: { name: "Completed", color: "bg-green-500" },
+  3: { name: "Cancelled", color: "bg-red-500" },
 } as const;
 
 interface LaunchManagerProps {
@@ -32,47 +37,53 @@ interface LaunchManagerProps {
   onLoadingChange: (loading: string | null) => void;
 }
 
-export default function LaunchManager({ 
-  selectedLaunch, 
-  onLaunchSelect, 
+export default function LaunchManager({
+  selectedLaunch,
+  onLaunchSelect,
   onCollectionChange,
-  isLoading, 
-  onLoadingChange 
+  isLoading,
+  onLoadingChange,
 }: LaunchManagerProps) {
   const { address } = useAccount();
-  const [newLaunchName, setNewLaunchName] = useState('');
-  const [newLaunchSymbol, setNewLaunchSymbol] = useState('');
-  const [newLaunchSupply, setNewLaunchSupply] = useState('100');
+  const [newLaunchName, setNewLaunchName] = useState("");
+  const [newLaunchSymbol, setNewLaunchSymbol] = useState("");
+  const [newLaunchSupply, setNewLaunchSupply] = useState("100");
 
   // Contract hooks
   const { createLaunch, startLaunch } = useLaunchpadContract();
   const { completeLaunch, cancelLaunch } = useLaunchOperations();
-  
-  // Data hooks - Get creator launches (admin control)
-  const { 
-    data: creatorLaunches, 
-    isLoading: isLoadingCreatorLaunches, 
-    error: creatorLaunchesError, 
-    refetch: refetchCreatorLaunches 
-  } = useCreatorLaunches(address);
-  
-  const { launch: selectedLaunchData, refetch: refetchSelectedLaunch } = useRealLaunch(selectedLaunch || 0);
+
+  // Data hooks - Get launches from database (admin control)
+  const {
+    launches: databaseLaunches,
+    isLoading: isLoadingDatabaseLaunches,
+    error: databaseLaunchesError,
+    refetch: refetchDatabaseLaunches,
+  } = useDatabaseLaunches();
+
+  const { launch: selectedLaunchData, refetch: refetchSelectedLaunch } =
+    useDatabaseLaunch(selectedLaunch);
 
   // Debug logging
-  console.log('🔍 LaunchManager - Creator Launches Debug:', {
+  console.log("🔍 LaunchManager - Database Launches Debug:", {
     address,
-    creatorLaunches,
-    isLoadingCreatorLaunches,
-    creatorLaunchesError,
+    databaseLaunches,
+    isLoadingDatabaseLaunches,
+    databaseLaunchesError,
     selectedLaunch,
-    selectedLaunchData
+    selectedLaunchData,
   });
 
   // Auto-select first launch if available
   useEffect(() => {
     if (creatorLaunches && creatorLaunches.length > 0 && selectedLaunch === null) {
-      const firstLaunch = Number(creatorLaunches[0]);
-      onLaunchSelect(firstLaunch);
+      const firstLaunchId = Number(creatorLaunches[0]);
+      console.log(`🎯 Auto-selecting first launch ID: ${firstLaunchId}`);
+      
+      // Only select if the launch ID is valid (> 0 or has valid data)
+      if (firstLaunchId >= 0) {
+        onLaunchSelect(firstLaunchId);
+      }
     }
   }, [creatorLaunches, selectedLaunch, onLaunchSelect]);
 
@@ -99,7 +110,8 @@ export default function LaunchManager({
         if (selectedLaunch !== null) refetchSelectedLaunch();
       }, 3000);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       toast.error(`Failed to ${actionName.toLowerCase()}: ${errorMessage}`);
     } finally {
       onLoadingChange(null);
@@ -108,50 +120,51 @@ export default function LaunchManager({
 
   const handleCreateLaunch = async () => {
     if (!newLaunchName || !newLaunchSymbol || !newLaunchSupply) {
-      toast.error('Please fill all fields');
+      toast.error("Please fill all fields");
       return;
     }
 
     await handleAction(
-      'create',
-      () => createLaunch({
-        name: newLaunchName,
-        symbol: newLaunchSymbol,
-        description: `${newLaunchName} NFT Collection`,
-        imageUri: 'https://via.placeholder.com/400x400?text=NFT',
-        maxSupply: BigInt(newLaunchSupply),
-        autoProgress: false
-      }),
-      'Launch created successfully'
+      "create",
+      () =>
+        createLaunch(
+          newLaunchName,
+          newLaunchSymbol,
+          `${newLaunchName} NFT Collection`,
+          "https://via.placeholder.com/400x400?text=NFT",
+          parseInt(newLaunchSupply),
+          false
+        ),
+      "Launch created successfully"
     );
 
     // Clear form
-    setNewLaunchName('');
-    setNewLaunchSymbol('');
-    setNewLaunchSupply('100');
+    setNewLaunchName("");
+    setNewLaunchSymbol("");
+    setNewLaunchSupply("100");
   };
 
   const handleStartLaunch = async (launchId: number) => {
     await handleAction(
-      'start',
-      () => startLaunch({ launchId: BigInt(launchId) }),
-      'Launch started successfully'
+      "start",
+      () => startLaunch(launchId),
+      "Launch started successfully"
     );
   };
 
   const handleCompleteLaunch = async (launchId: number) => {
     await handleAction(
-      'complete',
-      () => completeLaunch({ launchId: BigInt(launchId) }),
-      'Launch completed successfully'
+      "complete",
+      () => completeLaunch(launchId),
+      "Launch completed successfully"
     );
   };
 
   const handleCancelLaunch = async (launchId: number) => {
     await handleAction(
-      'cancel',
-      () => cancelLaunch({ launchId: BigInt(launchId) }),
-      'Launch cancelled successfully'
+      "cancel",
+      () => cancelLaunch(launchId),
+      "Launch cancelled successfully"
     );
   };
 
@@ -168,7 +181,9 @@ export default function LaunchManager({
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Collection Name</label>
+              <label className="text-sm font-medium mb-2 block">
+                Collection Name
+              </label>
               <Input
                 placeholder="e.g., Cool Cats"
                 value={newLaunchName}
@@ -184,7 +199,9 @@ export default function LaunchManager({
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Max Supply</label>
+              <label className="text-sm font-medium mb-2 block">
+                Max Supply
+              </label>
               <Input
                 type="number"
                 placeholder="100"
@@ -193,12 +210,12 @@ export default function LaunchManager({
               />
             </div>
           </div>
-          <Button 
+          <Button
             onClick={handleCreateLaunch}
-            disabled={isLoading === 'create'}
+            disabled={isLoading === "create"}
             className="w-full"
           >
-            {isLoading === 'create' ? 'Creating...' : '🚀 Create Launch'}
+            {isLoading === "create" ? "Creating..." : "🚀 Create Launch"}
           </Button>
         </CardContent>
       </Card>
@@ -215,12 +232,20 @@ export default function LaunchManager({
           {/* Debug Info */}
           <div className="mb-4 p-3 bg-muted/50 rounded-lg text-sm">
             <div className="font-semibold mb-2">🔍 Debug Info:</div>
-            <div>Loading: {isLoadingCreatorLaunches ? 'Yes' : 'No'}</div>
-            <div>Error: {creatorLaunchesError ? creatorLaunchesError.message : 'None'}</div>
-            <div>Creator Launches: {creatorLaunches ? `[${creatorLaunches.map(id => Number(id)).join(', ')}]` : 'null'}</div>
+            <div>Loading: {isLoadingCreatorLaunches ? "Yes" : "No"}</div>
+            <div>
+              Error:{" "}
+              {creatorLaunchesError ? creatorLaunchesError.message : "None"}
+            </div>
+            <div>
+              Creator Launches:{" "}
+              {creatorLaunches
+                ? `[${creatorLaunches.map((id) => Number(id)).join(", ")}]`
+                : "null"}
+            </div>
             <div>Count: {creatorLaunches?.length || 0}</div>
           </div>
-          
+
           {!creatorLaunches || creatorLaunches.length === 0 ? (
             <p className="text-muted-foreground mb-4">
               No launches found. Create the first launch!
@@ -310,7 +335,11 @@ function LaunchCard({
 
   if (!launch) {
     return (
-      <Card className={`cursor-pointer transition-colors ${isSelected ? 'ring-2 ring-primary' : ''}`}>
+      <Card
+        className={`cursor-pointer transition-colors ${
+          isSelected ? "ring-2 ring-primary" : ""
+        }`}
+      >
         <CardContent className="p-4">
           <div className="text-center text-muted-foreground">
             Loading launch {launchId}...
@@ -321,8 +350,10 @@ function LaunchCard({
   }
 
   return (
-    <Card 
-      className={`cursor-pointer transition-colors ${isSelected ? 'ring-2 ring-primary' : ''}`}
+    <Card
+      className={`cursor-pointer transition-colors ${
+        isSelected ? "ring-2 ring-primary" : ""
+      }`}
       onClick={onSelect}
     >
       <CardContent className="p-4">
@@ -331,13 +362,14 @@ function LaunchCard({
             <h3 className="font-semibold">#{launchId}</h3>
             <Badge
               className={
-                LAUNCH_STATUS[launch.status as keyof typeof LAUNCH_STATUS]?.color
+                LAUNCH_STATUS[launch.status as keyof typeof LAUNCH_STATUS]
+                  ?.color
               }
             >
               {LAUNCH_STATUS[launch.status as keyof typeof LAUNCH_STATUS]?.name}
             </Badge>
           </div>
-          
+
           <div>
             <p className="font-medium">{launch.name}</p>
             <p className="text-sm text-muted-foreground">{launch.symbol}</p>
@@ -351,13 +383,13 @@ function LaunchCard({
                   e.stopPropagation();
                   onStart();
                 }}
-                disabled={isLoading === 'start'}
+                disabled={isLoading === "start"}
               >
                 <Play className="h-3 w-3 mr-1" />
                 Start
               </Button>
             )}
-            
+
             {launch.status === 1 && (
               <Button
                 size="sm"
@@ -365,13 +397,13 @@ function LaunchCard({
                   e.stopPropagation();
                   onComplete();
                 }}
-                disabled={isLoading === 'complete'}
+                disabled={isLoading === "complete"}
               >
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Complete
               </Button>
             )}
-            
+
             {(launch.status === 0 || launch.status === 1) && (
               <Button
                 size="sm"
@@ -380,7 +412,7 @@ function LaunchCard({
                   e.stopPropagation();
                   onCancel();
                 }}
-                disabled={isLoading === 'cancel'}
+                disabled={isLoading === "cancel"}
               >
                 <XCircle className="h-3 w-3 mr-1" />
                 Cancel

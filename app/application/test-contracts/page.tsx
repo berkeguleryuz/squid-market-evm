@@ -15,7 +15,7 @@ import { ExternalLink } from "lucide-react";
 import { Address } from "viem";
 
 // Import our new modular components
-import LaunchManager from "./components/LaunchManager";
+import LaunchManagerNew from "./components/LaunchManagerNew";
 import PhaseManager from "./components/PhaseManager";
 import SupplyMonitor from "./components/SupplyMonitor";
 
@@ -75,7 +75,7 @@ export default function TestContractsPage() {
         </TabsList>
 
         <TabsContent value="launches" className="space-y-6">
-          <LaunchManager
+          <LaunchManagerNew
             selectedLaunch={selectedLaunch}
             onLaunchSelect={(launchId) => {
               setSelectedLaunch(launchId);

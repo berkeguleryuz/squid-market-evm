@@ -393,6 +393,26 @@ contract Launchpad is Ownable, ReentrancyGuard, Pausable {
         return creatorLaunches[_creator];
     }
 
+    function getActiveLaunches() external view returns (uint256[] memory) {
+        uint256[] memory activeLaunches = new uint256[](_launchIdCounter);
+        uint256 activeCount = 0;
+        
+        for (uint256 i = 0; i < _launchIdCounter; i++) {
+            if (launches[i].status == LaunchStatus.ACTIVE) {
+                activeLaunches[activeCount] = i;
+                activeCount++;
+            }
+        }
+        
+        // Create properly sized array
+        uint256[] memory result = new uint256[](activeCount);
+        for (uint256 i = 0; i < activeCount; i++) {
+            result[i] = activeLaunches[i];
+        }
+        
+        return result;
+    }
+
     function getCurrentLaunchId() external view returns (uint256) {
         return _launchIdCounter;
     }

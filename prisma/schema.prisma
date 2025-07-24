@@ -22,3 +22,26 @@ model Waitlist {
 
   @@map("waitlist")
 }
+
+model LaunchPool {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  launchId         Int      @unique // Contract launch ID
+  contractAddress  String   @unique // NFT Collection contract address
+  launchpadAddress String   // Launchpad contract address
+  name             String   // Collection name
+  symbol           String   // Collection symbol
+  description      String?  // Collection description
+  imageUri         String?  // Collection image
+  maxSupply        Int      // Maximum supply
+  creator          String   // Creator wallet address
+  status           String   @default("PENDING") // PENDING, ACTIVE, COMPLETED, CANCELLED
+  startTime        DateTime? // When launch was started
+  endTime          DateTime? // When launch was completed/cancelled
+  totalRaised      String   @default("0") // Total ETH raised
+  currentPhase     String   @default("NONE") // Current phase
+  autoProgress     Boolean  @default(false) // Auto progress phases
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("launchpools")
+}
