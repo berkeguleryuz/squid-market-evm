@@ -30,15 +30,41 @@ export function useBlockchainNFTs() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Get known contract addresses to scan
-  const knownCollections = [
-    getContractAddress("NFT_COLLECTION"), // Our main collection
-    // Add more known collections here
-  ];
+  // Get known contract addresses to scan (will be populated dynamically)
+  const [knownCollections, setKnownCollections] = useState<Address[]>([]);
+  
+  // Fetch launchpad collections dynamically
+  useEffect(() => {
+    const fetchLaunchpadCollections = async () => {
+      try {
+        const response = await fetch('/api/launchpools');
+        const result = await response.json();
+        
+        if (result.success) {
+          const launchpadAddresses = result.data.map((launch: any) => launch.contractAddress as Address);
+          const mainCollection = getContractAddress("NFT_COLLECTION");
+          
+          // Combine main collection with launchpad collections
+          const allCollections = [mainCollection, ...launchpadAddresses];
+          setKnownCollections(allCollections);
+          
+          console.log('🔍 Known collections to scan:', allCollections.length, allCollections);
+        }
+      } catch (error) {
+        console.error('Error fetching launchpad collections:', error);
+        // Fallback to main collection only
+        setKnownCollections([getContractAddress("NFT_COLLECTION")]);
+      }
+    };
+    
+    fetchLaunchpadCollections();
+  }, []);
 
   useEffect(() => {
-    scanAllNFTs();
-  }, []);
+    if (knownCollections.length > 0) {
+      scanAllNFTs();
+    }
+  }, [knownCollections]);
 
   const scanAllNFTs = async () => {
     setIsLoading(true);

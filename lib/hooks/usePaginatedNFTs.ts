@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Address } from 'viem';
-import { VERIFIED_COLLECTIONS, VerifiedCollection } from '@/lib/data/verifiedCollections';
+import { getVerifiedCollections, VerifiedCollection } from '@/lib/data/verifiedCollections';
 
 export interface PaginatedNFT {
   tokenId: bigint;
@@ -53,9 +53,13 @@ export function usePaginatedNFTs(page: number = 1, itemsPerPage: number = 9, ver
     setError(null);
 
     try {
+      // Get dynamic verified collections (includes launchpad collections)
+      const allVerifiedCollections = await getVerifiedCollections();
       const collectionsToScan = verifiedOnly 
-        ? VERIFIED_COLLECTIONS.filter(c => c.verified)
-        : VERIFIED_COLLECTIONS;
+        ? allVerifiedCollections.filter(c => c.verified)
+        : allVerifiedCollections;
+
+      console.log('🔍 Collections to scan:', collectionsToScan.length, collectionsToScan.map(c => ({ name: c.name, address: c.address })));
 
       const allNFTs: PaginatedNFT[] = [];
 
@@ -103,15 +107,19 @@ export function usePaginatedNFTs(page: number = 1, itemsPerPage: number = 9, ver
 
   const fetchCollectionNFTs = async (collection: VerifiedCollection): Promise<PaginatedNFT[]> => {
     try {
+      console.log(`🔍 Fetching NFTs from collection: ${collection.name} (${collection.address})`);
       const response = await fetch(`/api/nfts/collection/${collection.address}?limit=50`);
+      
       if (!response.ok) {
+        console.error(`❌ API response not ok for ${collection.name}:`, response.status, response.statusText);
         throw new Error(`Failed to fetch NFTs from ${collection.name}`);
       }
 
       const data = await response.json();
+      console.log(`✅ Fetched ${data.nfts?.length || 0} NFTs from ${collection.name}:`, data);
       return data.nfts || [];
     } catch (error) {
-      console.error(`Error fetching collection ${collection.address}:`, error);
+      console.error(`❌ Error fetching collection ${collection.address}:`, error);
       return [];
     }
   };

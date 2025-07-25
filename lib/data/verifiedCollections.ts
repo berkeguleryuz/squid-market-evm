@@ -13,19 +13,45 @@ export interface VerifiedCollection {
   volume24h?: string;
 }
 
-// Verified collections list - can be managed via database later
-export const VERIFIED_COLLECTIONS: VerifiedCollection[] = [
-  {
-    address: "0xE6C16bF41Fb43278C5AD59dacB69381643689E8A" as Address,
-    name: "Squid Market NFTs",
-    symbol: "SQUID",
-    description: "Official Squid Market NFT Collection",
-    image: "https://via.placeholder.com/400x400/6366f1/ffffff?text=SQUID",
-    verified: true,
-    featured: true,
-  },
-  // Add more verified collections here
+// Static verified collections list
+const STATIC_VERIFIED_COLLECTIONS: VerifiedCollection[] = [
+  // Add external verified collections here if needed
 ];
+
+// Dynamic function to get all verified collections (static + launchpad)
+export async function getVerifiedCollections(): Promise<VerifiedCollection[]> {
+  try {
+    // Fetch launchpad collections from database
+    const response = await fetch('/api/launchpools');
+    const result = await response.json();
+    
+    if (!result.success) {
+      console.error('Failed to fetch launchpad collections:', result.error);
+      return STATIC_VERIFIED_COLLECTIONS;
+    }
+    
+    // Convert launchpad collections to verified collections
+    const launchpadCollections: VerifiedCollection[] = result.data.map((launch: any) => ({
+      address: launch.contractAddress as Address,
+      name: launch.name,
+      symbol: launch.symbol,
+      description: launch.description || `${launch.name} NFT Collection`,
+      image: launch.imageUri || 'https://via.placeholder.com/400x400/6366f1/ffffff?text=NFT',
+      verified: true, // All launchpad collections are verified
+      featured: launch.status === 'ACTIVE', // Active launches are featured
+      totalSupply: launch.maxSupply,
+    }));
+    
+    // Combine static and launchpad collections
+    return [...STATIC_VERIFIED_COLLECTIONS, ...launchpadCollections];
+  } catch (error) {
+    console.error('Error fetching verified collections:', error);
+    return STATIC_VERIFIED_COLLECTIONS;
+  }
+}
+
+// Cached version for synchronous access (fallback)
+export const VERIFIED_COLLECTIONS: VerifiedCollection[] = STATIC_VERIFIED_COLLECTIONS;
 
 // Function to check if a collection is verified
 export function isCollectionVerified(address: string): boolean {

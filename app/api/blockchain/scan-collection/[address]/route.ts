@@ -136,7 +136,7 @@ export async function GET(
         const listingId = undefined;
 
         tokens.push({
-          tokenId: BigInt(tokenId),
+          tokenId: tokenId.toString(), // Convert BigInt to string for JSON serialization
           collection: collectionAddress,
           collectionName,
           owner,
@@ -147,8 +147,8 @@ export async function GET(
           tokenURI,
           isVerified,
           isListed,
-          listingPrice,
-          listingId,
+          listingPrice: listingPrice?.toString(), // Convert BigInt to string if exists
+          listingId: listingId?.toString(), // Convert BigInt to string if exists
         });
 
       } catch (error) {

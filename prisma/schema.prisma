@@ -31,8 +31,10 @@ model LaunchPool {
   name             String   // Collection name
   symbol           String   // Collection symbol
   description      String?  // Collection description
-  imageUri         String?  // Collection image
+  imageUrl         String?  // Collection image URL
   maxSupply        Int      // Maximum supply
+  currentSupply    Int      @default(0) // Current minted supply
+  holderCount      Int      @default(0) // Number of unique holders
   creator          String   // Creator wallet address
   status           String   @default("PENDING") // PENDING, ACTIVE, COMPLETED, CANCELLED
   startTime        DateTime? // When launch was started
@@ -40,6 +42,8 @@ model LaunchPool {
   totalRaised      String   @default("0") // Total ETH raised
   currentPhase     String   @default("NONE") // Current phase
   autoProgress     Boolean  @default(false) // Auto progress phases
+  blockNumber      String?  // Block number when created
+  transactionHash  String?  // Transaction hash when created
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -65,4 +69,40 @@ model NFTMetadata {
 
   @@unique([launchId, tokenId]) // Ensure unique tokenId per launch
   @@map("nft_metadata")
+}
+
+model NFT {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  tokenId           String   // Token ID as string
+  collectionAddress String   // NFT Collection contract address
+  owner             String   // Current owner wallet address
+  name              String   // NFT name
+  description       String?  // NFT description
+  image             String?  // Image URL (IPFS)
+  metadata          Json?    // Full metadata as JSON
+  tokenURI          String?  // Token URI from contract
+  lastTransferBlock String?  // Block number of last transfer
+  lastTransferHash  String?  // Transaction hash of last transfer
+  isListed          Boolean  @default(false) // Whether listed on marketplace
+  listingPrice      String?  // Listing price if listed
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([tokenId, collectionAddress]) // Ensure unique tokenId per collection
+  @@map("nfts")
+}
+
+model CollectionCache {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  address     String   @unique // Collection contract address (lowercase)
+  name        String   // Collection name
+  symbol      String   // Collection symbol
+  totalSupply Int      @default(0) // Total supply from contract
+  image       String?  // Preview image URL from first NFT
+  description String?  // Collection description if available
+  verified    Boolean  @default(false) // Whether collection is verified
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("collection_cache")
 }

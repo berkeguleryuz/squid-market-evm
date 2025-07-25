@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (
-      !launchId ||
+      launchId === undefined || launchId === null ||
       !contractAddress ||
       !launchpadAddress ||
       !name ||

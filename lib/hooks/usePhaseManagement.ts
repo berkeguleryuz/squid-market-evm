@@ -63,7 +63,7 @@ export const useLaunchPhaseInfo = (launchId: number) => {
     functionName: "launches",
     args: [BigInt(launchId)],
     query: {
-      enabled: launchId > 0,
+      enabled: launchId >= 0,
       refetchInterval: 10000, // Refetch every 10 seconds
     },
   });

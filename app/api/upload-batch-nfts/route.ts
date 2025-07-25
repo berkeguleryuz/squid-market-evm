@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!launchId || !collectionAddress) {
+    if (launchId === undefined || launchId === null || !collectionAddress) {
       return NextResponse.json(
         { success: false, error: "Launch ID and collection address required" },
         { status: 400 }

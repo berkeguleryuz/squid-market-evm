@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
-import { usePaginatedNFTs } from '@/lib/hooks/usePaginatedNFTs';
+import { useUserBlockchainNFTs } from '@/lib/hooks/useBlockchainDiscovery';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -31,7 +31,7 @@ export default function MyNFTsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
   const { isConnected, address } = useAccount();
-  const { nfts: allNFTs, isLoading, error, refetch } = usePaginatedNFTs(1, 50, false);
+  const { nfts: userNFTs, isLoading, error, refetch } = useUserBlockchainNFTs(address);
 
   useEffect(() => {
     setMounted(true);
@@ -40,11 +40,6 @@ export default function MyNFTsPage() {
   if (!mounted) {
     return null;
   }
-
-  // Filter NFTs to show only user's NFTs
-  const userNFTs = allNFTs.filter(nft => 
-    address && nft.owner.toLowerCase() === address.toLowerCase()
-  );
 
   // Filter NFTs based on listing status and search
   const filteredNFTs = userNFTs.filter(nft => {
