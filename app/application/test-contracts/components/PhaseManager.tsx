@@ -70,7 +70,7 @@ export default function PhaseManager({
   const { configurePhase } = useConfigurePhase();
   const { writeContractAsync } = useWriteContract();
   const { data: phaseConfigData, refetch: refetchPhaseConfig } = usePhaseConfig(
-    selectedCollection ? Number(selectedCollection) : 0,
+    selectedLaunch?.launchId ?? 0,
     phaseToConfig
   );
 
@@ -101,9 +101,7 @@ export default function PhaseManager({
     onLoadingChange(actionName);
     try {
       const txHash = await action();
-      toast.success(
-        `✅ ${actionName} successful! TX: ${txHash.slice(0, 10)}...`
-      );
+      toast.success(`✅ ${actionName} successful! TX: ${txHash}`);
 
       // Refresh phase config data
       if (actionName.includes("Configure Phase")) {
@@ -157,8 +155,12 @@ export default function PhaseManager({
       });
 
       // Debug parameters before calling configurePhase
+      if (!selectedLaunch?.launchId && selectedLaunch?.launchId !== 0) {
+        throw new Error("No valid launch selected for phase configuration");
+      }
+      
       const params = {
-        launchId: selectedLaunch?.launchId || 1,
+        launchId: selectedLaunch.launchId, // Use exact launch ID, including 0
         phase: phaseToConfig,
         price: phasePrice.toString(), // Ensure price is always string
         startTime: startTimestamp,
@@ -188,7 +190,7 @@ export default function PhaseManager({
 
       console.log("📝 Transaction hash:", hash);
       toast.info("⏳ Transaction submitted, waiting for confirmation...");
-      
+
       // The success toast will be shown by the transaction receipt handler
       console.log("✅ Phase configuration transaction submitted successfully");
 
@@ -288,25 +290,32 @@ export default function PhaseManager({
             <div>
               <label className="block text-sm font-medium mb-2">
                 <Clock className="h-4 w-4 inline mr-1" />
-                Start Time
+                {phaseToConfig === 1 ? "Presale Start" : phaseToConfig === 2 ? "Whitelist Start" : "Public Sale End"}
               </label>
               <Input
                 type="datetime-local"
-                value={phaseStartTime}
-                onChange={(e) => setPhaseStartTime(e.target.value)}
+                value={phaseToConfig === 3 ? phaseEndTime : phaseStartTime}
+                onChange={(e) => {
+                  if (phaseToConfig === 3) {
+                    setPhaseEndTime(e.target.value);
+                    // For public phase, set start time to 1 hour before end
+                    const endDate = new Date(e.target.value);
+                    const startDate = new Date(endDate.getTime() - 60 * 60 * 1000);
+                    setPhaseStartTime(startDate.toISOString().slice(0, 16));
+                  } else {
+                    setPhaseStartTime(e.target.value);
+                    // For presale/whitelist, set end time to 24 hours after start
+                    const startDate = new Date(e.target.value);
+                    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000);
+                    setPhaseEndTime(endDate.toISOString().slice(0, 16));
+                  }
+                }}
               />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2">
-                <Clock className="h-4 w-4 inline mr-1" />
-                End Time
-              </label>
-              <Input
-                type="datetime-local"
-                value={phaseEndTime}
-                onChange={(e) => setPhaseEndTime(e.target.value)}
-              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {phaseToConfig === 1 && "Presale will run for 24 hours from this time"}
+                {phaseToConfig === 2 && "Whitelist phase will run for 24 hours from this time"}
+                {phaseToConfig === 3 && "Public sale will end at this time"}
+              </p>
             </div>
           </div>
 

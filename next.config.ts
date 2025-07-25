@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  reactStrictMode: false, // Disable to prevent WalletConnect multiple initialization
   images: {
     remotePatterns: [
       {

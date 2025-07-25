@@ -63,12 +63,19 @@ export function LaunchOverview({ launchData }: LaunchOverviewProps) {
           const totalNFTs = await fetch(`/api/nft-metadata/${launchData.launchId}?includeMinted=true`);
           if (totalNFTs.ok) {
             const totalData = await totalNFTs.json();
-            const minted = totalData.totalCount - data.count;
+            const totalCount = Number(totalData.totalCount) || 0;
+            const remainingCount = Number(data.count) || 0;
+            const minted = Math.max(0, totalCount - remainingCount);
             setMintedCount(minted);
+          } else {
+            setMintedCount(0);
           }
+        } else {
+          setMintedCount(0);
         }
       } catch (error) {
         console.error("Failed to fetch minted count:", error);
+        setMintedCount(0);
       }
     };
 
@@ -219,7 +226,7 @@ export function LaunchOverview({ launchData }: LaunchOverviewProps) {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Minted</p>
-                <p className="text-2xl font-bold">{mintedCount}</p>
+                <p className="text-2xl font-bold">{mintedCount || 0}</p>
               </div>
             </div>
           </CardContent>
@@ -233,7 +240,7 @@ export function LaunchOverview({ launchData }: LaunchOverviewProps) {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Remaining</p>
-                <p className="text-2xl font-bold">{launchData.maxSupply - mintedCount}</p>
+                <p className="text-2xl font-bold">{Math.max(0, (launchData.maxSupply || 0) - (mintedCount || 0))}</p>
               </div>
             </div>
           </CardContent>

@@ -80,6 +80,48 @@ export function DynamicMintButton({
     isWhitelistPhaseWhitelisted,
     isEligibleToMint: isEligibleToMint(),
   });
+  
+  // Detailed phase config debugging
+  console.log("🔍 Phase Config Details:", {
+    presaleConfig: {
+      raw: presaleConfig,
+      isArray: Array.isArray(presaleConfig),
+      length: presaleConfig?.length,
+      price: presaleConfig?.[0],
+      isConfigured: presaleConfig?.[6],
+    },
+    whitelistConfig: {
+      raw: whitelistConfig,
+      isArray: Array.isArray(whitelistConfig),
+      length: whitelistConfig?.length,
+      price: whitelistConfig?.[0],
+      isConfigured: whitelistConfig?.[6],
+    },
+    publicConfig: {
+      raw: publicConfig,
+      isArray: Array.isArray(publicConfig),
+      length: publicConfig?.length,
+      price: publicConfig?.[0],
+      isConfigured: publicConfig?.[6],
+    },
+  });
+  
+  // Detailed whitelist status debugging
+  console.log("🔍 Whitelist Status Details:", {
+    launchId,
+    currentPhase,
+    presaleWhitelist: {
+      raw: isPresaleWhitelisted,
+      type: typeof isPresaleWhitelisted,
+      boolean: Boolean(isPresaleWhitelisted),
+    },
+    whitelistPhase: {
+      raw: isWhitelistPhaseWhitelisted,
+      type: typeof isWhitelistPhaseWhitelisted,
+      boolean: Boolean(isWhitelistPhaseWhitelisted),
+    },
+    isEligibleResult: isEligibleToMint(),
+  });
 
   useEffect(() => {
     setIsLoading(true);

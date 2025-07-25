@@ -4,10 +4,10 @@ import { Address } from "viem";
 
 // Contract addresses for Sepolia testnet only
 export const CONTRACT_ADDRESSES: Record<string, Address> = {
-  LAUNCHPAD: "0x0765C0Cc2C96267879a70346E662eeECc67B7f38" as Address, // ✅ LaunchpadCore with Automatic setLaunchpadContract - Deployed
-  MARKETPLACE: "0x4c37452412Aed0ef80A68980Dc555E9EcB46277A" as Address, // ✅ Deployed & Verified
-  PAYMENT_HANDLER: "0xe362BE87d431bDA6EE84CAB3d8c4C88d8213E9bA" as Address, // ✅ Deployed & Verified
-  NFT_COLLECTION: "0xE6C16bF41Fb43278C5AD59dacB69381643689E8A" as Address, // ✅ Deployed & Verified
+  LAUNCHPAD: "0xBD23D1248c8B41B3De6c4A3f47B46e0c53B4e953" as Address, // ✅ LaunchpadCore with totalSupply support - Deployed & Verified
+  MARKETPLACE: "0x126B30c43dcA61Ca51478A6C066DAA116569A3C1" as Address, // ✅ Marketplace with fee management - Deployed & Verified
+  PAYMENT_HANDLER: "0x4328Ab91644ba9bC7A35bFEB6946eEB092fd102A" as Address, // ✅ PaymentHandler - Deployed & Verified
+  NFT_COLLECTION: "0x6bC75FEb1dF7680D6C53033cD8fd62Cd7b659Db9" as Address, // ✅ NFTCollection with totalSupply - Deployed & Verified
 };
 
 // Chain configuration for Sepolia

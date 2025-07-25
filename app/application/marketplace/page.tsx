@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
-import { useNFT } from "@/lib/contexts/NFTContext";
+import { usePaginatedNFTs } from '@/lib/hooks/usePaginatedNFTs';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,304 +19,270 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, Grid, List, ExternalLink } from "lucide-react";
+import { Search, Grid, List, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 
 export default function MarketplacePage() {
   const { address, isConnected } = useAccount();
-  const { allNFTs, isLoadingNFTs, refreshNFTs } = useNFT();
-
-  // Local state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [verifiedOnly, setVerifiedOnly] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("newest");
-  const [filterBy, setFilterBy] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // Filter and sort NFTs
-  const filteredNFTs = allNFTs
-    .filter((nft) => {
-      const matchesSearch =
-        nft.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        nft.description.toLowerCase().includes(searchTerm.toLowerCase());
+  const { 
+    nfts, 
+    pagination, 
+    isLoading, 
+    error, 
+    refetch 
+  } = usePaginatedNFTs(currentPage, 9, verifiedOnly);
 
-      const matchesFilter =
-        filterBy === "all" ||
-        (filterBy === "listed" && nft.isListed) ||
-        (filterBy === "not-listed" && !nft.isListed);
+  // Filter NFTs based on search
+  const filteredNFTs = nfts.filter((nft) => {
+    const matchesSearch = nft.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         nft.collectionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         nft.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
+  });
 
-      return matchesSearch && matchesFilter;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "price-low":
-          return parseFloat(a.price || "0") - parseFloat(b.price || "0");
-        case "price-high":
-          return parseFloat(b.price || "0") - parseFloat(a.price || "0");
-        case "oldest":
-          return a.createdAt.getTime() - b.createdAt.getTime();
-        case "newest":
-        default:
-          return b.createdAt.getTime() - a.createdAt.getTime();
-      }
-    });
-
-  const handleBuyNFT = async (nftId: string) => {
-    console.log("Buying NFT:", nftId);
-    // Will implement with marketplace contract
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
-  if (!isConnected) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>🔗 Connect Your Wallet</CardTitle>
-            <CardDescription>
-              Please connect your wallet to browse the marketplace.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
+  const handleNextPage = () => {
+    if (pagination.hasNext) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (pagination.hasPrev) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="container mx-auto px-4 py-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">🏪 NFT Marketplace</h1>
-          <p className="text-muted-foreground">
-            Discover, buy, and sell unique digital assets
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}>
-            {viewMode === "grid" ? (
-              <List className="h-4 w-4" />
-            ) : (
-              <Grid className="h-4 w-4" />
-            )}
-          </Button>
-          <Button variant="outline" size="sm" onClick={refreshNFTs}>
-            Refresh
-          </Button>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">NFT Marketplace</h1>
+        <p className="text-muted-foreground">
+          Discover, collect, and trade unique digital assets
+        </p>
       </div>
 
-      {/* Filters and Search */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search NFTs..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-
-            {/* Sort */}
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Newest First</SelectItem>
-                <SelectItem value="oldest">Oldest First</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Filter */}
-            <Select value={filterBy} onValueChange={setFilterBy}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All NFTs</SelectItem>
-                <SelectItem value="listed">Listed for Sale</SelectItem>
-                <SelectItem value="not-listed">Not Listed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold">{allNFTs.length}</div>
+            <div className="text-2xl font-bold">{pagination.totalItems}</div>
             <div className="text-sm text-muted-foreground">Total NFTs</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold">
-              {allNFTs.filter((nft) => nft.isListed).length}
-            </div>
-            <div className="text-sm text-muted-foreground">Listed for Sale</div>
+            <div className="text-2xl font-bold">{nfts.filter(nft => nft.isListed).length}</div>
+            <div className="text-sm text-muted-foreground">Listed</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold">{filteredNFTs.length}</div>
-            <div className="text-sm text-muted-foreground">
-              Filtered Results
-            </div>
+            <div className="text-2xl font-bold">{nfts.filter(nft => nft.isVerified).length}</div>
+            <div className="text-sm text-muted-foreground">Verified</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold">
-              {isLoadingNFTs ? "..." : "🟢"}
+              {nfts.filter(nft => nft.listingPrice).length}
             </div>
-            <div className="text-sm text-muted-foreground">Status</div>
+            <div className="text-sm text-muted-foreground">For Sale</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* NFT Grid/List */}
-      {isLoadingNFTs ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-4">
-                <div className="aspect-square bg-muted rounded-lg mb-4"></div>
-                <div className="h-4 bg-muted rounded mb-2"></div>
-                <div className="h-3 bg-muted rounded mb-4"></div>
-                <div className="h-8 bg-muted rounded"></div>
-              </CardContent>
-            </Card>
-          ))}
+      {/* Filters and Search */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search NFTs, collections..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
-      ) : filteredNFTs.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <div className="text-muted-foreground">
-              {searchTerm || filterBy !== "all"
-                ? "No NFTs found matching your criteria."
-                : "No NFTs available in the marketplace yet."}
+        
+        <Select value={verifiedOnly ? "verified" : "all"} onValueChange={(value) => setVerifiedOnly(value === "verified")}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter collections" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Collections</SelectItem>
+            <SelectItem value="verified">Verified Only</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <div className="flex gap-2">
+          <Button
+            variant={viewMode === "grid" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("grid")}
+          >
+            <Grid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === "list" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("list")}
+          >
+            <List className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={refetch} disabled={isLoading}>
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading NFTs...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="text-center py-12">
+          <p className="text-red-500 mb-4">Error loading NFTs: {error}</p>
+          <Button onClick={refetch} variant="outline">
+            Try Again
+          </Button>
+        </div>
+      )}
+
+      {/* NFT Grid */}
+      {!isLoading && !error && (
+        <>
+          {filteredNFTs.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">No NFTs found</p>
+              <Button onClick={refetch} variant="outline">
+                Refresh
+              </Button>
             </div>
-            {searchTerm || filterBy !== "all" ? (
+          ) : (
+            <div className={`grid gap-6 mb-8 ${
+              viewMode === "grid" 
+                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" 
+                : "grid-cols-1"
+            }`}>
+              {filteredNFTs.map((nft) => (
+                <Card key={`${nft.collection}-${nft.tokenId}`} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="relative">
+                    <Image
+                      src={nft.image}
+                      alt={nft.name}
+                      width={400}
+                      height={400}
+                      className="w-full h-64 object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "/placeholder-nft.png";
+                      }}
+                    />
+                    {nft.isVerified && (
+                      <Badge className="absolute top-2 left-2" variant="secondary">
+                        Verified
+                      </Badge>
+                    )}
+                    {nft.isListed && (
+                      <Badge className="absolute top-2 right-2" variant="default">
+                        Listed
+                      </Badge>
+                    )}
+                  </div>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">{nft.name}</CardTitle>
+                    <CardDescription className="text-sm">
+                      {nft.collectionName}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                      {nft.description || "No description available"}
+                    </p>
+                    
+                    {nft.listingPrice && (
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-sm text-muted-foreground">Price</span>
+                        <span className="font-semibold">{nft.listingPrice} ETH</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-2">
+                      <Button className="flex-1" size="sm">
+                        View Details
+                      </Button>
+                      {nft.isListed && (
+                        <Button variant="outline" size="sm">
+                          Buy Now
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {pagination.totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4">
               <Button
                 variant="outline"
-                onClick={() => {
-                  setSearchTerm("");
-                  setFilterBy("all");
-                }}
-                className="mt-4">
-                Clear Filters
+                size="sm"
+                onClick={handlePrevPage}
+                disabled={!pagination.hasPrev}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
               </Button>
-            ) : null}
-          </CardContent>
-        </Card>
-      ) : (
-        <div
-          className={
-            viewMode === "grid"
-              ? "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6"
-              : "space-y-4"
-          }>
-          {filteredNFTs.map((nft) => (
-            <Card
-              key={nft.id}
-              className="group hover:shadow-lg transition-shadow">
-              <CardContent className="p-4">
-                {viewMode === "grid" ? (
-                  <>
-                    {/* Image */}
-                    <div className="aspect-square relative mb-4 rounded-lg overflow-hidden bg-muted">
-                      <Image
-                        src={nft.image}
-                        alt={nft.name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform"
-                      />
-                      {nft.isListed && (
-                        <Badge className="absolute top-2 right-2">
-                          For Sale
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="space-y-2">
-                      <h3 className="font-semibold truncate">{nft.name}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {nft.description}
-                      </p>
-
-                      {nft.price && (
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-lg">
-                            {nft.price} ETH
-                          </span>
-                          <Button
-                            size="sm"
-                            onClick={() => handleBuyNFT(nft.id)}
-                            disabled={!nft.isListed}>
-                            {nft.isListed ? "Buy Now" : "Not Listed"}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    {/* Image */}
-                    <div className="w-20 h-20 relative rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                      <Image
-                        src={nft.image}
-                        alt={nft.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold truncate">{nft.name}</h3>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {nft.description}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        {nft.isListed && <Badge size="sm">For Sale</Badge>}
-                        <span className="text-xs text-muted-foreground">
-                          Token #{nft.tokenId}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Price & Action */}
-                    <div className="text-right flex-shrink-0">
-                      {nft.price && (
-                        <div className="font-bold text-lg">{nft.price} ETH</div>
-                      )}
-                      <Button
-                        size="sm"
-                        onClick={() => handleBuyNFT(nft.id)}
-                        disabled={!nft.isListed}
-                        className="mt-2">
-                        {nft.isListed ? "Buy" : "Not Listed"}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              
+              <div className="flex items-center gap-2">
+                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                  const page = i + 1;
+                  return (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePageChange(page)}
+                    >
+                      {page}
+                    </Button>
+                  );
+                })}
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={!pagination.hasNext}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

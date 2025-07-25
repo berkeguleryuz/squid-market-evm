@@ -296,6 +296,10 @@ contract NFTCollection is ERC721, ERC721URIStorage, ERC721Burnable, Ownable, Pau
         return _tokenIdCounter;
     }
 
+    function totalSupply() external view returns (uint256) {
+        return collectionInfo.currentSupply;
+    }
+
     function _baseURI() internal view override returns (string memory) {
         return _baseTokenURI;
     }

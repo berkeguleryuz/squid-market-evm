@@ -36,14 +36,14 @@ async function main() {
     deployments.Marketplace = marketplaceAddress;
     console.log("✅ Marketplace deployed to:", marketplaceAddress);
 
-    // 3. Deploy Launchpad (needs _feeRecipient)
-    console.log("\n📦 Deploying Launchpad...");
-    const Launchpad = await ethers.getContractFactory("Launchpad");
-    const launchpad = await Launchpad.deploy(deployer.address); // Pass deployer as fee recipient
-    await launchpad.waitForDeployment();
-    const launchpadAddress = await launchpad.getAddress();
-    deployments.Launchpad = launchpadAddress;
-    console.log("✅ Launchpad deployed to:", launchpadAddress);
+    // 3. Deploy LaunchpadCore (needs _feeRecipient)
+    console.log("\n📦 Deploying LaunchpadCore...");
+    const LaunchpadCore = await ethers.getContractFactory("LaunchpadCore");
+    const launchpadCore = await LaunchpadCore.deploy(deployer.address); // Pass deployer as fee recipient
+    await launchpadCore.waitForDeployment();
+    const launchpadCoreAddress = await launchpadCore.getAddress();
+    deployments.LaunchpadCore = launchpadCoreAddress;
+    console.log("✅ LaunchpadCore deployed to:", launchpadCoreAddress);
 
     // 4. Deploy a test NFTCollection for demo
     console.log("\n📦 Deploying test NFTCollection...");
@@ -65,20 +65,20 @@ async function main() {
     console.log("\n🔗 Setting up contract relationships...");
 
     // Set launchpad in NFT collection
-    await nftCollection.setLaunchpadContract(launchpadAddress);
+    await nftCollection.setLaunchpadContract(launchpadCoreAddress);
     console.log("✅ Launchpad contract set in NFTCollection");
 
     // Set marketplace in NFT collection
     await nftCollection.setMarketplaceContract(marketplaceAddress);
     console.log("✅ Marketplace contract set in NFTCollection");
 
-    // Set payment handler in marketplace
-    await marketplace.setPaymentHandler(paymentHandlerAddress);
-    console.log("✅ PaymentHandler set in Marketplace");
+    // Set fee recipient in marketplace (for commission earnings)
+    await marketplace.setFeeRecipient(deployer.address);
+    console.log("✅ Fee recipient set in Marketplace");
 
-    // Set marketplace in launchpad
-    await launchpad.setMarketplace(marketplaceAddress);
-    console.log("✅ Marketplace set in Launchpad");
+    // Set platform fee percentage (2.5% default)
+    await marketplace.setPlatformFeePercentage(250); // 2.5%
+    console.log("✅ Platform fee percentage set to 2.5%");
 
     // Wait for transactions to be mined
     console.log("\n⏳ Waiting for transactions to be confirmed...");
@@ -115,7 +115,7 @@ async function main() {
     // Generate frontend config
     const frontendConfig = `// Auto-generated deployment addresses
 export const SEPOLIA_ADDRESSES = {
-  LAUNCHPAD: '${launchpadAddress}' as const,
+  LAUNCHPAD: '${launchpadCoreAddress}' as const,
   MARKETPLACE: '${marketplaceAddress}' as const,
   PAYMENT_HANDLER: '${paymentHandlerAddress}' as const,
   TEST_NFT_COLLECTION: '${nftCollectionAddress}' as const,
@@ -124,7 +124,7 @@ export const SEPOLIA_ADDRESSES = {
 // Copy these addresses to lib/wagmi.ts
 export const CONTRACT_ADDRESSES_UPDATE = {
   [11155111]: { // Sepolia chain ID
-    LAUNCHPAD: '${launchpadAddress}',
+    LAUNCHPAD: '${launchpadCoreAddress}',
     MARKETPLACE: '${marketplaceAddress}',
     PAYMENT_HANDLER: '${paymentHandlerAddress}',
   }
@@ -145,7 +145,7 @@ export const CONTRACT_ADDRESSES_UPDATE = {
     console.log(`Fee Recipient: ${deployer.address}`);
     console.log(`PaymentHandler: ${paymentHandlerAddress}`);
     console.log(`Marketplace: ${marketplaceAddress}`);
-    console.log(`Launchpad: ${launchpadAddress}`);
+    console.log(`Launchpad: ${launchpadCoreAddress}`);
     console.log(`Test NFTCollection: ${nftCollectionAddress}`);
     console.log("=====================================");
 
@@ -154,7 +154,7 @@ export const CONTRACT_ADDRESSES_UPDATE = {
     console.log("2. Update lib/wagmi.ts with the new addresses");
     console.log("3. Test the contracts on Sepolia testnet");
     console.log(
-      `4. View on Etherscan: https://sepolia.etherscan.io/address/${launchpadAddress}`,
+      `4. View on Etherscan: https://sepolia.etherscan.io/address/${launchpadCoreAddress}`,
     );
 
     return deployments;

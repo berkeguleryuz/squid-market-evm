@@ -1589,6 +1589,13 @@ export const NFT_COLLECTION_ABI = [
     inputs: [{ name: "tokenId", type: "uint256" }],
     outputs: [{ name: "", type: "string" }],
   },
+  {
+    name: "totalSupply",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
   // Custom functions
   {
     name: "mintNFT",

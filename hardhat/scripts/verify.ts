@@ -60,21 +60,21 @@ async function main() {
       }
     }
 
-    // Verify Launchpad
+    // Verify LaunchpadCore
     try {
-      console.log("\n🔍 Verifying Launchpad...");
+      console.log("\n🔍 Verifying LaunchpadCore...");
       await run("verify:verify", {
-        address: contracts.Launchpad,
+        address: contracts.LaunchpadCore,
         constructorArguments: [deploymentData.deployer], // _feeRecipient
       });
-      console.log("✅ Launchpad verified!");
+      console.log("✅ LaunchpadCore verified!");
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
       if (errorMessage.includes("Already Verified")) {
-        console.log("✅ Launchpad already verified!");
+        console.log("✅ LaunchpadCore already verified!");
       } else {
-        console.log("❌ Launchpad verification failed:", errorMessage);
+        console.log("❌ LaunchpadCore verification failed:", errorMessage);
       }
     }
 

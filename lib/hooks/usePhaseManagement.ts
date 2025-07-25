@@ -47,7 +47,7 @@ export const usePhaseConfig = (launchId: number, phase: Phase) => {
     functionName: "launchPhases",
     args: [BigInt(launchId), phase],
     query: {
-      enabled: launchId > 0 && phase > 0,
+      enabled: launchId >= 0 && phase > 0, // Allow Launch ID 0
       refetchInterval: 30000, // Refetch every 30 seconds
     },
   });
@@ -265,7 +265,7 @@ export const useWhitelistStatus = (launchId: number, phase: Phase, userAddress?:
     functionName: "isWhitelisted",
     args: [BigInt(launchId), phase, addressToCheck as Address],
     query: {
-      enabled: Boolean(launchId > 0 && phase > 0 && addressToCheck),
+      enabled: Boolean(launchId >= 0 && phase > 0 && addressToCheck), // Allow Launch ID 0
       refetchInterval: 30000, // Refetch every 30 seconds
     },
   });

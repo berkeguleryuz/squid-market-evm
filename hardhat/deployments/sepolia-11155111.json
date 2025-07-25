@@ -1,0 +1,13 @@
+{
+  "network": "sepolia",
+  "chainId": "11155111",
+  "deployer": "0x726965AD57752b79aF2C0Db0E5b08Fe00328dd8B",
+  "timestamp": "2025-07-25T09:37:36.125Z",
+  "contracts": {
+    "PaymentHandler": "0x4328Ab91644ba9bC7A35bFEB6946eEB092fd102A",
+    "Marketplace": "0x126B30c43dcA61Ca51478A6C066DAA116569A3C1",
+    "LaunchpadCore": "0xBD23D1248c8B41B3De6c4A3f47B46e0c53B4e953",
+    "NFTCollection": "0x6bC75FEb1dF7680D6C53033cD8fd62Cd7b659Db9"
+  },
+  "gasUsed": {}
+}
