@@ -17,11 +17,23 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ExternalLink, Grid, List } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { BuyNFTDialog } from "@/components/ui/buy-nft-dialog";
+import { NFTCard } from "@/components/ui/nft-card";
 
 export default function CollectionDetailPage() {
   const params = useParams();
   const address = params.address as string;
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [buyDialogOpen, setBuyDialogOpen] = useState(false);
+  const [selectedNFT, setSelectedNFT] = useState<{
+    collection: string;
+    tokenId: string;
+    name: string;
+    image: string;
+    listingPrice?: string;
+    listingId?: string;
+    owner: string;
+  } | null>(null);
 
   const { collection, loading: collectionLoading, error: collectionError } = useRealCollection(address);
   const { allNFTs, isLoading: nftsLoading, error: nftsError } = useBlockchainNFTs();
@@ -209,48 +221,24 @@ export default function CollectionDetailPage() {
             : "space-y-4"
           }>
             {nfts.map((nft) => (
-              <Card key={`${address}-${nft.tokenId}`} className="overflow-hidden">
-                <div className="aspect-square relative">
-                  {nft.image ? (
-                    <img
-                      src={nft.image}
-                      alt={nft.name || `${collection.name} #${nft.tokenId}`}
-                      className="w-full h-full object-cover"
-                      style={{ width: '100%', height: '100%' }}
-                      onError={(e) => {
-                        console.log('Image failed to load:', nft.image);
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                      }}
-                    />
-                  ) : null}
-                  <div className={`w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center ${nft.image ? 'hidden' : ''}`}>
-                    <span className="text-2xl font-bold text-muted-foreground">
-                      #{nft.tokenId}
-                    </span>
-                  </div>
-                </div>
-                <CardContent className="p-4">
-                  <CardTitle className="text-lg mb-2">
-                    {nft.name || `${collection.name} #${nft.tokenId}`}
-                  </CardTitle>
-                  {nft.description && (
-                    <CardDescription className="mb-3 line-clamp-2">
-                      {nft.description}
-                    </CardDescription>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Token #{nft.tokenId}
-                    </span>
-                    {nft.owner && (
-                      <span className="text-xs text-muted-foreground">
-                        Owner: {nft.owner.slice(0, 6)}...{nft.owner.slice(-4)}
-                      </span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              <NFTCard
+                key={`${address}-${nft.tokenId}`}
+                nft={{
+                  collection: address,
+                  tokenId: nft.tokenId.toString(),
+                  name: nft.name || `${collection.name} #${nft.tokenId}`,
+                  image: nft.image || '',
+                  description: nft.description,
+                  collectionName: collection.name,
+                  owner: nft.owner,
+                  isVerified: collection.verified
+                }}
+                showOwnerActions={false}
+                onBuyClick={(selectedNft) => {
+                  setSelectedNFT(selectedNft);
+                  setBuyDialogOpen(true);
+                }}
+              />
             ))}
           </div>
         )}
@@ -282,6 +270,22 @@ export default function CollectionDetailPage() {
           </div>
         )}
       </div>
+      
+      {/* Buy NFT Dialog */}
+      {selectedNFT && (
+        <BuyNFTDialog
+          isOpen={buyDialogOpen}
+          onClose={() => {
+            setBuyDialogOpen(false);
+            setSelectedNFT(null);
+          }}
+          nft={selectedNFT}
+          onSuccess={() => {
+            // Refresh NFTs after successful purchase
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 }

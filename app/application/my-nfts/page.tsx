@@ -23,12 +23,21 @@ import { Search, Grid, List, Plus, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { ListNFTDialog } from '@/components/ui/list-nft-dialog';
+import { NFTCard } from '@/components/ui/nft-card';
 
 export default function MyNFTsPage() {
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [listDialogOpen, setListDialogOpen] = useState(false);
+  const [selectedNFT, setSelectedNFT] = useState<{
+    collection: string;
+    tokenId: string;
+    name: string;
+    image: string;
+  } | null>(null);
   
   const { isConnected, address } = useAccount();
   const { nfts: userNFTs, isLoading, error, refetch } = useUserBlockchainNFTs(address);
@@ -210,71 +219,34 @@ export default function MyNFTsPage() {
                 : "grid-cols-1"
             }`}>
               {filteredNFTs.map((nft) => (
-                <Card key={`${nft.collection}-${nft.tokenId}`} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="relative">
-                    <Image
-                      src={nft.image}
-                      alt={nft.name}
-                      width={400}
-                      height={400}
-                      className="w-full h-64 object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = "/placeholder-nft.png";
-                      }}
-                    />
-                    {nft.isVerified && (
-                      <Badge className="absolute top-2 left-2" variant="secondary">
-                        Verified
-                      </Badge>
-                    )}
-                    {nft.isListed && (
-                      <Badge className="absolute top-2 right-2" variant="default">
-                        Listed
-                      </Badge>
-                    )}
-                  </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">{nft.name}</CardTitle>
-                    <CardDescription className="text-sm">
-                      {nft.collectionName}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {nft.description || "No description available"}
-                    </p>
-                    
-                    {nft.listingPrice && (
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-sm text-muted-foreground">Listed Price</span>
-                        <span className="font-semibold">{nft.listingPrice} ETH</span>
-                      </div>
-                    )}
-                    
-                    <div className="flex gap-2">
-                      <Button className="flex-1" size="sm" variant="outline">
-                        View Details
-                      </Button>
-                      {nft.isListed ? (
-                        <Button size="sm" variant="secondary">
-                          Unlist
-                        </Button>
-                      ) : (
-                        <Button size="sm">
-                          List for Sale
-                        </Button>
-                      )}
-                      <Button size="sm" variant="outline">
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                <NFTCard
+                  key={`${nft.collection}-${nft.tokenId}`}
+                  nft={nft}
+                  showOwnerActions={true}
+                  onListClick={(selectedNft) => {
+                    setSelectedNFT(selectedNft);
+                    setListDialogOpen(true);
+                  }}
+                />
               ))}
             </div>
           )}
         </>
+      )}
+      
+      {/* List NFT Dialog */}
+      {selectedNFT && (
+        <ListNFTDialog
+          isOpen={listDialogOpen}
+          onClose={() => {
+            setListDialogOpen(false);
+            setSelectedNFT(null);
+          }}
+          nft={selectedNFT}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
       )}
     </div>
   );
