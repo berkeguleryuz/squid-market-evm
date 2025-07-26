@@ -102,13 +102,10 @@ export function BuyNFTDialog({ isOpen, onClose, nft, onSuccess }: BuyNFTDialogPr
                 target.src = "/placeholder-nft.png";
               }}
             />
-            <div>
+            <div className="flex-1">
               <h3 className="font-semibold">{nft.name}</h3>
               <p className="text-sm text-muted-foreground">
-                Token ID: {nft.tokenId}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Owner: {nft.owner.slice(0, 6)}...{nft.owner.slice(-4)}
+                Token ID: #{nft.tokenId}
               </p>
             </div>
           </div>
@@ -116,27 +113,16 @@ export function BuyNFTDialog({ isOpen, onClose, nft, onSuccess }: BuyNFTDialogPr
           {/* Price Display */}
           <div className="p-4 bg-muted rounded-lg">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Price</span>
-              <span className="text-lg font-bold">{nft.listingPrice} ETH</span>
+              <span className="text-lg font-semibold">Purchase Price</span>
+              <span className="text-2xl font-bold">{nft.listingPrice} ETH</span>
             </div>
-            <div className="flex justify-between items-center mt-2">
-              <span className="text-xs text-muted-foreground">Platform Fee (2.5%)</span>
-              <span className="text-xs text-muted-foreground">
-                {nft.listingPrice ? (parseFloat(nft.listingPrice) * 0.025).toFixed(4) : '0'} ETH
-              </span>
-            </div>
-            <hr className="my-2" />
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-semibold">Total</span>
-              <span className="text-lg font-bold">
-                {nft.listingPrice ? (parseFloat(nft.listingPrice) * 1.025).toFixed(4) : '0'} ETH
-              </span>
-            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Platform fee (2.5%) is deducted from seller&apos;s proceeds
+            </p>
           </div>
 
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground space-y-1">
             <p>• This transaction cannot be reversed</p>
-            <p>• Make sure you have enough ETH in your wallet</p>
             <p>• Gas fees are additional to the purchase price</p>
           </div>
         </div>

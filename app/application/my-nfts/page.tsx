@@ -1,36 +1,36 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
-import { useUserBlockchainNFTs } from '@/lib/hooks/useBlockchainDiscovery';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from "react";
+import { useAccount } from "wagmi";
+import { useUserBlockchainNFTs } from "@/lib/hooks/useBlockchainDiscovery";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Search, Grid, List, Plus, ExternalLink } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
-import { ListNFTDialog } from '@/components/ui/list-nft-dialog';
-import { NFTCard } from '@/components/ui/nft-card';
+} from "@/components/ui/select";
+import { Search, Grid, List, Plus, ExternalLink } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { ListNFTDialog } from "@/components/ui/list-nft-dialog";
+import { NFTCard } from "@/components/ui/nft-card";
 
 export default function MyNFTsPage() {
   const [mounted, setMounted] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [listDialogOpen, setListDialogOpen] = useState(false);
   const [selectedNFT, setSelectedNFT] = useState<{
     collection: string;
@@ -38,9 +38,14 @@ export default function MyNFTsPage() {
     name: string;
     image: string;
   } | null>(null);
-  
+
   const { isConnected, address } = useAccount();
-  const { nfts: userNFTs, isLoading, error, refetch } = useUserBlockchainNFTs(address);
+  const {
+    nfts: userNFTs,
+    isLoading,
+    error,
+    refetch,
+  } = useUserBlockchainNFTs(address);
 
   useEffect(() => {
     setMounted(true);
@@ -51,14 +56,16 @@ export default function MyNFTsPage() {
   }
 
   // Filter NFTs based on listing status and search
-  const filteredNFTs = userNFTs.filter(nft => {
-    const matchesSearch = nft.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         nft.collectionName.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesFilter = filterStatus === 'all' ||
-                         (filterStatus === 'listed' && nft.isListed) ||
-                         (filterStatus === 'unlisted' && !nft.isListed);
-    
+  const filteredNFTs = userNFTs.filter((nft) => {
+    const matchesSearch =
+      nft.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      nft.collectionName.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesFilter =
+      filterStatus === "all" ||
+      (filterStatus === "listed" && nft.isListed) ||
+      (filterStatus === "unlisted" && !nft.isListed);
+
     return matchesSearch && matchesFilter;
   });
 
@@ -66,7 +73,7 @@ export default function MyNFTsPage() {
     return sum + (nft.listingPrice ? parseFloat(nft.listingPrice) : 0);
   }, 0);
 
-  const listedCount = userNFTs.filter(nft => nft.isListed).length;
+  const listedCount = userNFTs.filter((nft) => nft.isListed).length;
 
   // If wallet not connected
   if (!isConnected) {
@@ -115,13 +122,17 @@ export default function MyNFTsPage() {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold">{userNFTs.filter(nft => nft.isVerified).length}</div>
+            <div className="text-2xl font-bold">
+              {userNFTs.filter((nft) => nft.isVerified).length}
+            </div>
             <div className="text-sm text-muted-foreground">Verified</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold">{totalValue.toFixed(2)} ETH</div>
+            <div className="text-2xl font-bold">
+              {totalValue.toFixed(2)} ETH
+            </div>
             <div className="text-sm text-muted-foreground">Total Value</div>
           </CardContent>
         </Card>
@@ -140,7 +151,7 @@ export default function MyNFTsPage() {
             />
           </div>
         </div>
-        
+
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by status" />
@@ -167,7 +178,12 @@ export default function MyNFTsPage() {
           >
             <List className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={refetch} disabled={isLoading}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refetch}
+            disabled={isLoading}
+          >
             Refresh
           </Button>
         </div>
@@ -199,25 +215,24 @@ export default function MyNFTsPage() {
           {filteredNFTs.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">
-                {userNFTs.length === 0 
-                  ? "You don't own any NFTs yet" 
-                  : "No NFTs match your search criteria"
-                }
+                {userNFTs.length === 0
+                  ? "You don't own any NFTs yet"
+                  : "No NFTs match your search criteria"}
               </p>
               {userNFTs.length === 0 && (
                 <Link href="/application/marketplace">
-                  <Button variant="outline">
-                    Browse Marketplace
-                  </Button>
+                  <Button variant="outline">Browse Marketplace</Button>
                 </Link>
               )}
             </div>
           ) : (
-            <div className={`grid gap-6 ${
-              viewMode === "grid" 
-                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" 
-                : "grid-cols-1"
-            }`}>
+            <div
+              className={`grid gap-6 ${
+                viewMode === "grid"
+                  ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                  : "grid-cols-1"
+              }`}
+            >
               {filteredNFTs.map((nft) => (
                 <NFTCard
                   key={`${nft.collection}-${nft.tokenId}`}
@@ -227,13 +242,19 @@ export default function MyNFTsPage() {
                     setSelectedNFT(selectedNft);
                     setListDialogOpen(true);
                   }}
+                  onViewDetails={(selectedNft) => {
+                    window.open(
+                      `/application/nft/${selectedNft.collection}/${selectedNft.tokenId}`,
+                      "_blank"
+                    );
+                  }}
                 />
               ))}
             </div>
           )}
         </>
       )}
-      
+
       {/* List NFT Dialog */}
       {selectedNFT && (
         <ListNFTDialog

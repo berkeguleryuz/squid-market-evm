@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+// import { useState } from 'react'; // Not used
 import { useAccount } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,12 +21,13 @@ interface NFTCardProps {
     owner?: string;
     isVerified?: boolean;
   };
-  onListClick?: (nft: any) => void;
-  onBuyClick?: (nft: any) => void;
+  onListClick?: (nft: NFTCardProps['nft']) => void;
+  onBuyClick?: (nft: NFTCardProps['nft'] & { listingPrice: string; listingId: string }) => void;
+  onViewDetails?: (nft: NFTCardProps['nft']) => void;
   showOwnerActions?: boolean; // true for My NFTs page, false for marketplace
 }
 
-export function NFTCard({ nft, onListClick, onBuyClick, showOwnerActions = false }: NFTCardProps) {
+export function NFTCard({ nft, onListClick, onBuyClick, onViewDetails, showOwnerActions = false }: NFTCardProps) {
   const { address: userAddress } = useAccount();
   const { listing, isListed, isLoading: listingLoading } = useNFTListing(nft.collection, nft.tokenId);
   
@@ -109,7 +110,12 @@ export function NFTCard({ nft, onListClick, onBuyClick, showOwnerActions = false
         
         {/* Action Buttons */}
         <div className="flex gap-2">
-          <Button className="flex-1" size="sm" variant="outline">
+          <Button 
+            className="flex-1" 
+            size="sm" 
+            variant="outline"
+            onClick={() => onViewDetails?.(nft)}
+          >
             View Details
           </Button>
           

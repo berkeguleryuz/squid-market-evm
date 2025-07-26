@@ -30,9 +30,12 @@ export default function CollectionDetailPage() {
     tokenId: string;
     name: string;
     image: string;
+    description?: string;
+    collectionName?: string;
+    owner?: string;
+    isVerified?: boolean;
     listingPrice?: string;
     listingId?: string;
-    owner: string;
   } | null>(null);
 
   const { collection, loading: collectionLoading, error: collectionError } = useRealCollection(address);
@@ -230,13 +233,16 @@ export default function CollectionDetailPage() {
                   image: nft.image || '',
                   description: nft.description,
                   collectionName: collection.name,
-                  owner: nft.owner,
+                  owner: nft.owner || '',
                   isVerified: collection.verified
                 }}
                 showOwnerActions={false}
                 onBuyClick={(selectedNft) => {
                   setSelectedNFT(selectedNft);
                   setBuyDialogOpen(true);
+                }}
+                onViewDetails={(selectedNft) => {
+                  window.open(`/application/nft/${selectedNft.collection}/${selectedNft.tokenId}`, '_blank');
                 }}
               />
             ))}
@@ -279,7 +285,12 @@ export default function CollectionDetailPage() {
             setBuyDialogOpen(false);
             setSelectedNFT(null);
           }}
-          nft={selectedNFT}
+          nft={{
+            ...selectedNFT,
+            owner: selectedNFT.owner || '',
+            listingPrice: selectedNFT.listingPrice || '0',
+            listingId: selectedNFT.listingId || '0'
+          }}
           onSuccess={() => {
             // Refresh NFTs after successful purchase
             window.location.reload();

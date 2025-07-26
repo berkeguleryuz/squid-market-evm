@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from 'react';
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useState, useEffect, useCallback } from 'react';
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { parseEther } from 'viem';
 import {
   Dialog,
@@ -18,6 +18,24 @@ import { toast } from 'sonner';
 import { MARKETPLACE_ABI } from '@/lib/contracts';
 import { getContractAddress } from '@/lib/wagmi';
 
+// ERC721 ABI for approval functions
+const ERC721_ABI = [
+  {
+    "inputs": [{"internalType": "address", "name": "to", "type": "address"}, {"internalType": "uint256", "name": "tokenId", "type": "uint256"}],
+    "name": "approve",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "uint256", "name": "tokenId", "type": "uint256"}],
+    "name": "getApproved",
+    "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+    "stateMutability": "view",
+    "type": "function"
+  }
+] as const;
+
 interface ListNFTDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -33,6 +51,25 @@ interface ListNFTDialogProps {
 export function ListNFTDialog({ isOpen, onClose, nft, onSuccess }: ListNFTDialogProps) {
   const [price, setPrice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [needsApproval, setNeedsApproval] = useState(true);
+
+  const marketplaceAddress = getContractAddress('MARKETPLACE');
+
+  // Check if NFT is already approved
+  const { data: approvedAddress } = useReadContract({
+    address: nft.collection as `0x${string}`,
+    abi: ERC721_ABI,
+    functionName: 'getApproved',
+    args: [BigInt(nft.tokenId)],
+  });
+
+  // Update approval status when data changes
+  useEffect(() => {
+    if (approvedAddress) {
+      setNeedsApproval(approvedAddress.toLowerCase() !== marketplaceAddress.toLowerCase());
+    }
+  }, [approvedAddress, marketplaceAddress]);
 
   const { writeContract, data: hash, error } = useWriteContract();
   
@@ -40,13 +77,32 @@ export function ListNFTDialog({ isOpen, onClose, nft, onSuccess }: ListNFTDialog
     hash,
   });
 
-  const handleList = async () => {
+
+
+  const handleListOrApprove = useCallback(async () => {
     if (!price || parseFloat(price) <= 0) {
       toast.error('Please enter a valid price');
       return;
     }
 
     try {
+      // If approval is needed, approve first
+      if (needsApproval) {
+        setIsApproving(true);
+        
+        await writeContract({
+          address: nft.collection as `0x${string}`,
+          abi: ERC721_ABI,
+          functionName: 'approve',
+          args: [
+            marketplaceAddress,
+            BigInt(nft.tokenId),
+          ],
+        });
+        return; // Wait for approval to complete
+      }
+
+      // If already approved, proceed with listing
       setIsLoading(true);
       
       const priceInWei = parseEther(price);
@@ -65,26 +121,42 @@ export function ListNFTDialog({ isOpen, onClose, nft, onSuccess }: ListNFTDialog
       });
 
     } catch (error) {
-      console.error('Error listing NFT:', error);
-      toast.error('Failed to list NFT');
+      console.error('Error:', error);
+      toast.error(needsApproval ? 'Failed to approve NFT' : 'Failed to list NFT');
       setIsLoading(false);
+      setIsApproving(false);
     }
-  };
+  }, [price, needsApproval, nft.collection, nft.tokenId, marketplaceAddress, writeContract]);
 
   // Handle transaction success
-  if (isSuccess) {
-    toast.success('NFT listed successfully!');
-    onSuccess?.();
-    onClose();
-    setPrice('');
-    setIsLoading(false);
-  }
+  useEffect(() => {
+    if (isSuccess) {
+      if (isApproving) {
+        toast.success('NFT approved! Now listing...');
+        setIsApproving(false);
+        setNeedsApproval(false);
+        // Auto-trigger listing after approval
+        setTimeout(() => {
+          handleListOrApprove();
+        }, 1000);
+      } else {
+        toast.success('NFT listed successfully!');
+        onSuccess?.();
+        onClose();
+        setPrice('');
+        setIsLoading(false);
+      }
+    }
+  }, [isSuccess, isApproving, onSuccess, onClose, handleListOrApprove]);
 
   // Handle transaction error
-  if (error) {
-    toast.error('Transaction failed');
-    setIsLoading(false);
-  }
+  useEffect(() => {
+    if (error) {
+      toast.error('Transaction failed');
+      setIsLoading(false);
+      setIsApproving(false);
+    }
+  }, [error]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -139,15 +211,19 @@ export function ListNFTDialog({ isOpen, onClose, nft, onSuccess }: ListNFTDialog
           <Button
             variant="outline"
             onClick={onClose}
-            disabled={isLoading || isConfirming}
+            disabled={isLoading || isConfirming || isApproving}
           >
             Cancel
           </Button>
+          
           <Button
-            onClick={handleList}
-            disabled={isLoading || isConfirming || !price}
+            onClick={handleListOrApprove}
+            disabled={isLoading || isConfirming || isApproving || !price}
           >
-            {isLoading || isConfirming ? 'Listing...' : 'List NFT'}
+            {isApproving || isConfirming ? 
+              (needsApproval ? 'Approving...' : 'Listing...') : 
+              (needsApproval ? 'Approve & List NFT' : 'List NFT')
+            }
           </Button>
         </DialogFooter>
       </DialogContent>
