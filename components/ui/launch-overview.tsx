@@ -200,33 +200,22 @@ export function LaunchOverview({ launchData }: LaunchOverviewProps) {
               <Label className="text-sm font-medium">Launch ID</Label>
               <p className="font-mono">{launchData.launchId}</p>
             </div>
-            <div>
-              <Label className="text-sm font-medium">Collection</Label>
-              <code className="text-xs bg-gray-200 px-2 py-1 rounded">
-                {launchData.contractAddress.slice(0, 20)}...
-              </code>
-            </div>
-            <div>
-              <Label className="text-sm font-medium">Creator</Label>
-              <code className="text-xs bg-gray-200 px-2 py-1 rounded">
-                {launchData.creator.slice(0, 20)}...
-              </code>
-            </div>
+
           </CardContent>
         </Card>
       </div>
 
-      {/* Mint Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Launch Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <Coins className="h-6 w-6 text-blue-600" />
+                <Target className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Minted</p>
-                <p className="text-2xl font-bold">{mintedCount || 0}</p>
+                <p className="text-sm text-gray-600">Minted / Total</p>
+                <p className="text-2xl font-bold">{mintedCount || 0} / {launchData.maxSupply || 0}</p>
               </div>
             </div>
           </CardContent>
@@ -236,26 +225,12 @@ export function LaunchOverview({ launchData }: LaunchOverviewProps) {
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 rounded-lg">
-                <Users className="h-6 w-6 text-green-600" />
+                <Activity className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Remaining</p>
-                <p className="text-2xl font-bold">{Math.max(0, (launchData.maxSupply || 0) - (mintedCount || 0))}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Progress</p>
+                <p className="text-sm text-gray-600">Current Phase</p>
                 <p className="text-2xl font-bold">
-                  {((mintedCount / launchData.maxSupply) * 100).toFixed(1)}%
+                  {currentPhase === "NONE" ? "Not Started" : currentPhase}
                 </p>
               </div>
             </div>
@@ -263,34 +238,7 @@ export function LaunchOverview({ launchData }: LaunchOverviewProps) {
         </Card>
       </div>
 
-      {/* Current Phase */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Current Phase
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {currentPhase === "NONE" ? (
-            <div className="text-center py-8 text-gray-500">
-              <Clock className="h-8 w-8 mx-auto mb-2" />
-              <p>No active phase</p>
-              <p className="text-sm">Configure phases to enable minting</p>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <Badge className={`${getPhaseColor(currentPhase)} text-white text-lg px-4 py-2`}>
-                {currentPhase}
-              </Badge>
-              <div>
-                <p className="text-sm text-gray-600">Currently active phase</p>
-                <p className="text-sm">Users can mint NFTs during this phase</p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
 
       {/* Phase Details */}
       {phaseDetails.length > 0 && (

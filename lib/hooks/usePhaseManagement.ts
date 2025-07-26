@@ -236,7 +236,7 @@ export const useStartLaunchWithPhases = () => {
         address: launchpad,
         abi: LAUNCHPAD_ABI,
         functionName: "startLaunch",
-        args: [BigInt(launchId), autoProgressPhases],
+        args: [BigInt(launchId)],
       });
     } catch (error) {
       console.error("❌ Start launch error:", error);
@@ -312,59 +312,25 @@ export const usePurchaseNFT = () => {
       const pricePerNFTWei = BigInt(pricePerNFT);
       console.log("💰 Price per NFT (wei):", pricePerNFTWei.toString());
 
-      // Get available NFT metadata from database
-      console.log(`🔍 Fetching available NFT metadata for launch ${launchId}...`);
-      
-      const metadataResponse = await fetch(`/api/nft-metadata/${launchId}`);
-      if (!metadataResponse.ok) {
-        throw new Error("Failed to fetch NFT metadata. Please ensure NFTs are uploaded first.");
-      }
-      
-      const metadataData = await metadataResponse.json();
-      const availableNFTs = metadataData.availableNFTs;
-      
-      if (!availableNFTs || availableNFTs.length === 0) {
-        throw new Error("No NFTs available for minting. Please upload NFTs first.");
-      }
-      
-      if (availableNFTs.length < quantity) {
-        throw new Error(`Only ${availableNFTs.length} NFTs available, but ${quantity} requested.`);
-      }
-      
-      console.log(`📦 Found ${availableNFTs.length} available NFTs, minting ${quantity}...`);
+      // Use simple incremental tokenId approach instead of fetching metadata
+      console.log(`🚀 Minting ${quantity} NFT(s) for launch ${launchId}...`);
       
       const results = [];
 
       for (let i = 0; i < quantity; i++) {
-        const nftMetadata = availableNFTs[i];
-        console.log(`🚀 Minting NFT ${i + 1}/${quantity}: ${nftMetadata.name}...`);
+        console.log(`🚀 Minting NFT ${i + 1}/${quantity}...`);
 
+        // Use contract's auto-increment tokenId system
         const result = await writeContract({
           address: collectionAddress,
           abi: NFT_COLLECTION_ABI,
           functionName: "mintNFT",
-          args: [address as Address, phase, nftMetadata.metadataUri],
+          args: [address as Address, phase, ""], // Empty metadata URI - contract should handle this
           value: pricePerNFTWei,
         });
 
         console.log(`✅ NFT ${i + 1} mint result:`, result);
         results.push(result);
-        
-        // Mark NFT as minted in database
-        try {
-          await fetch(`/api/nft-metadata/${launchId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              tokenId: nftMetadata.tokenId,
-              mintedTo: address,
-            }),
-          });
-          console.log(`💾 NFT ${nftMetadata.tokenId} marked as minted`);
-        } catch (dbError) {
-          console.error(`❌ Failed to mark NFT as minted:`, dbError);
-          // Continue even if database update fails
-        }
 
         // Small delay between mints to avoid nonce issues
         if (i < quantity - 1) {

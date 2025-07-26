@@ -126,29 +126,49 @@ export function DynamicMintButton({
   useEffect(() => {
     setIsLoading(true);
 
-    // Check if any phase is configured with a price > 0 and determine current phase
+    // Check if any phase is configured and determine current active phase based on time
+    const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds
     const configs = [
-      { config: presaleConfig, phase: 1 },
-      { config: whitelistConfig, phase: 2 },
-      { config: publicConfig, phase: 3 },
+      { config: presaleConfig, phase: 1, name: "Presale" },
+      { config: whitelistConfig, phase: 2, name: "Whitelist" },
+      { config: publicConfig, phase: 3, name: "Public" },
     ];
 
     let hasValidPhase = false;
     let activePhase = 1;
     let activePrice = "0";
+    let currentActivePhase = null;
 
-    for (const { config, phase } of configs) {
+    // Find the currently active phase based on time
+    for (const { config, phase, name } of configs) {
       if (config && Array.isArray(config) && config.length >= 7) {
-        const price = config[0]; // price is the first element
-        const isConfigured = config[6]; // isConfigured is the last element
+        const price = config[0]; // price
+        const startTime = Number(config[1]); // startTime
+        const endTime = Number(config[2]); // endTime
+        const isConfigured = config[6]; // isConfigured
 
-        if (price && price > 0 && isConfigured) {
+        console.log(`🕐 Phase ${phase} (${name}):`, {
+          price: price?.toString(),
+          startTime: new Date(startTime * 1000).toLocaleString(),
+          endTime: new Date(endTime * 1000).toLocaleString(),
+          now: new Date(now * 1000).toLocaleString(),
+          isConfigured,
+          isActive: startTime <= now && now <= endTime,
+        });
+
+        if (price && price > 0 && isConfigured && startTime <= now && now <= endTime) {
           hasValidPhase = true;
           activePhase = phase;
           activePrice = (Number(price) / 1e18).toString();
-          break; // Use first configured phase
+          currentActivePhase = { phase, name, startTime, endTime };
+          console.log(`✅ Active phase found: ${name} (Phase ${phase})`);
+          break; // Use first active phase
         }
       }
+    }
+
+    if (!currentActivePhase) {
+      console.log(`⚠️ No active phase found at ${new Date(now * 1000).toLocaleString()}`);
     }
 
     setIsConfigured(hasValidPhase);

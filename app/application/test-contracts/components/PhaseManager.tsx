@@ -28,6 +28,8 @@ import {
   DollarSign,
   Users,
   Target,
+  Package,
+  Play,
 } from "lucide-react";
 import { Address } from "viem";
 
@@ -60,6 +62,7 @@ export default function PhaseManager({
 
   // Phase configuration state
   const [phaseToConfig, setPhaseToConfig] = useState(1);
+  const [isSelectedPhaseExpired, setIsSelectedPhaseExpired] = useState(false);
   const [phasePrice, setPhasePrice] = useState("0.01");
   const [phaseStartTime, setPhaseStartTime] = useState("");
   const [phaseEndTime, setPhaseEndTime] = useState("");
@@ -73,6 +76,11 @@ export default function PhaseManager({
     selectedLaunch?.launchId ?? 0,
     phaseToConfig
   );
+  
+  // Get phase config data for all phases to check expiration
+  const { data: presaleConfigData } = usePhaseConfig(selectedLaunch?.launchId ?? 0, 1);
+  const { data: whitelistConfigData } = usePhaseConfig(selectedLaunch?.launchId ?? 0, 2);
+  const { data: publicConfigData } = usePhaseConfig(selectedLaunch?.launchId ?? 0, 3);
 
   // Set default times
   useEffect(() => {
@@ -93,6 +101,36 @@ export default function PhaseManager({
       setTimeout(() => refetchPhaseConfig(), 1000);
     }
   }, [selectedCollection, phaseToConfig, refetchPhaseConfig]);
+
+  // Check if selected phase is expired
+  useEffect(() => {
+    const now = Math.floor(Date.now() / 1000);
+    let phaseData;
+    
+    // Get the correct phase data for selected phase
+    switch (phaseToConfig) {
+      case 1:
+        phaseData = presaleConfigData;
+        break;
+      case 2:
+        phaseData = whitelistConfigData;
+        break;
+      case 3:
+        phaseData = publicConfigData;
+        break;
+      default:
+        phaseData = null;
+    }
+    
+    let isExpired = false;
+    if (phaseData && Array.isArray(phaseData) && phaseData.length >= 7) {
+      const isConfigured = phaseData[6];
+      const endTime = Number(phaseData[2]);
+      isExpired = isConfigured && endTime > 0 && endTime < now;
+    }
+    
+    setIsSelectedPhaseExpired(isExpired);
+  }, [phaseToConfig, presaleConfigData, whitelistConfigData, publicConfigData]);
 
   const handleAction = async (
     actionName: string,
@@ -233,20 +271,59 @@ export default function PhaseManager({
               <SelectContent>
                 {Object.entries(PHASES)
                   .slice(1)
-                  .map(([key, phase]) => (
-                    <SelectItem key={key} value={key}>
-                      <div className="flex items-center gap-2">
-                        <span>{phase.icon}</span>
-                        <span>{phase.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  .map(([key, phase]) => {
+                    // Check if phase is expired
+                    const now = Math.floor(Date.now() / 1000);
+                    const phaseNum = parseInt(key);
+                    let phaseData;
+                    
+                    // Get the correct phase data for each phase
+                    switch (phaseNum) {
+                      case 1:
+                        phaseData = presaleConfigData;
+                        break;
+                      case 2:
+                        phaseData = whitelistConfigData;
+                        break;
+                      case 3:
+                        phaseData = publicConfigData;
+                        break;
+                      default:
+                        phaseData = null;
+                    }
+                    
+                    let isExpired = false;
+                    
+                    // Only consider expired if phase is configured AND end time has passed
+                    if (phaseData && Array.isArray(phaseData) && phaseData.length >= 7) {
+                      const isConfigured = phaseData[6]; // isConfigured flag
+                      const endTime = Number(phaseData[2]);
+                      // Phase is expired only if it's configured AND end time has passed
+                      isExpired = isConfigured && endTime > 0 && endTime < now;
+                    }
+                    
+                    return (
+                      <SelectItem 
+                        key={key} 
+                        value={key}
+                        disabled={isExpired}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{phase.icon}</span>
+                          <span>{phase.name}</span>
+                          {isExpired && (
+                            <span className="text-xs text-red-500 ml-2">(Expired)</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
               </SelectContent>
             </Select>
           </div>
 
           {/* Phase Settings Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">
                 <DollarSign className="h-4 w-4 inline mr-1" />
@@ -290,52 +367,81 @@ export default function PhaseManager({
             <div>
               <label className="block text-sm font-medium mb-2">
                 <Clock className="h-4 w-4 inline mr-1" />
-                {phaseToConfig === 1 ? "Presale Start" : phaseToConfig === 2 ? "Whitelist Start" : "Public Sale End"}
+                {phaseToConfig === 1 ? "Presale Start" : phaseToConfig === 2 ? "Whitelist Start" : "Public Sale Start"}
               </label>
               <Input
                 type="datetime-local"
-                value={phaseToConfig === 3 ? phaseEndTime : phaseStartTime}
+                value={phaseStartTime}
                 onChange={(e) => {
-                  if (phaseToConfig === 3) {
-                    setPhaseEndTime(e.target.value);
-                    // For public phase, set start time to 1 hour before end
-                    const endDate = new Date(e.target.value);
-                    const startDate = new Date(endDate.getTime() - 60 * 60 * 1000);
-                    setPhaseStartTime(startDate.toISOString().slice(0, 16));
-                  } else {
-                    setPhaseStartTime(e.target.value);
-                    // For presale/whitelist, set end time to 24 hours after start
+                  setPhaseStartTime(e.target.value);
+                  // Auto-set end time to 24 hours later if not already set
+                  if (!phaseEndTime || new Date(phaseEndTime) <= new Date(e.target.value)) {
                     const startDate = new Date(e.target.value);
                     const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000);
                     setPhaseEndTime(endDate.toISOString().slice(0, 16));
                   }
                 }}
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                <Clock className="h-4 w-4 inline mr-1" />
+                {phaseToConfig === 1 ? "Presale End" : phaseToConfig === 2 ? "Whitelist End" : "Public Sale End"}
+              </label>
+              <Input
+                type="datetime-local"
+                value={phaseEndTime}
+                onChange={(e) => setPhaseEndTime(e.target.value)}
+                min={phaseStartTime}
+              />
               <p className="text-xs text-muted-foreground mt-1">
-                {phaseToConfig === 1 && "Presale will run for 24 hours from this time"}
-                {phaseToConfig === 2 && "Whitelist phase will run for 24 hours from this time"}
-                {phaseToConfig === 3 && "Public sale will end at this time"}
+                Phase duration: {phaseStartTime && phaseEndTime ? 
+                  `${Math.round((new Date(phaseEndTime).getTime() - new Date(phaseStartTime).getTime()) / (1000 * 60 * 60))} hours` : 
+                  'Set start and end times'
+                }
               </p>
+            </div>
+          </div>
+
+          {/* Phase Status Information */}
+          <div className="bg-muted/50 p-4 rounded-lg">
+            <h4 className="font-medium mb-2">Phase Status</h4>
+            <div className="text-sm text-muted-foreground space-y-1">
+              {phaseConfigData && Array.isArray(phaseConfigData) && phaseConfigData.length >= 7 ? (
+                <>
+                  <p>Current Price: {(Number(phaseConfigData[0]) / 1e18).toFixed(4)} ETH</p>
+                  <p>Start Time: {new Date(Number(phaseConfigData[1]) * 1000).toLocaleString()}</p>
+                  <p>End Time: {new Date(Number(phaseConfigData[2]) * 1000).toLocaleString()}</p>
+                  <p>Max Per Wallet: {phaseConfigData[3]?.toString()}</p>
+                  <p>Max Supply: {phaseConfigData[4]?.toString()}</p>
+                  <p>Status: {phaseConfigData[6] ? '✅ Configured' : '❌ Not Configured'}</p>
+                </>
+              ) : (
+                <p>Phase not configured yet</p>
+              )}
             </div>
           </div>
 
           <Button
             onClick={handleConfigurePhase}
-            disabled={isLoading === "Configure Phase"}
+            disabled={isLoading === "Configure Phase" || isSelectedPhaseExpired}
             className="w-full"
           >
             {isLoading === "Configure Phase" ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Configuring...
+                Configuring Phase...
+              </>
+            ) : isSelectedPhaseExpired ? (
+              <>
+                <Clock className="h-4 w-4 mr-2" />
+                Phase Expired - Cannot Configure
               </>
             ) : (
               <>
                 <Settings className="h-4 w-4 mr-2" />
-                Configure {
-                  PHASES[phaseToConfig as keyof typeof PHASES]?.name
-                }{" "}
-                Phase
+                Configure {PHASES[phaseToConfig as keyof typeof PHASES]?.name} Phase
               </>
             )}
           </Button>
