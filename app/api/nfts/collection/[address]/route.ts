@@ -114,7 +114,7 @@ export async function GET(
         let metadata = {
           name: `${collectionName} #${tokenId}`,
           description: verifiedInfo?.description || "",
-          image: verifiedInfo?.image || "/placeholder-nft.png",
+          image: verifiedInfo?.image || "/placeholder.jpg",
           attributes: [],
         };
 

@@ -166,22 +166,6 @@ export default function LaunchpadPage() {
               </Link>
             </div>
 
-            {/* Debug Info */}
-            {process.env.NODE_ENV === "development" && allLaunches.length > 0 && (
-              <div className="glass p-4 rounded-lg mb-8 text-sm">
-                <div className="text-white/60 mb-2">🐛 Debug Info:</div>
-                <div className="text-xs space-y-1">
-                  <div>Total Launches: {allLaunches.length}</div>
-                  <div>
-                    Active: {allLaunches.filter((l) => l.isActive).length}
-                  </div>
-                  <div>
-                    Completed: {allLaunches.filter((l) => l.status === 2).length}
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Filters */}
             <div className="flex flex-wrap justify-center gap-4 mb-12">
               {[

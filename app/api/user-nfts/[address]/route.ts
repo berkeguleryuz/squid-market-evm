@@ -48,7 +48,7 @@ export async function GET(
         collectionName: launch?.name || "Unknown Collection",
         name: nft.name,
         description: nft.description || "",
-        image: nft.image || "/placeholder-nft.png",
+        image: nft.image || "/placeholder.jpg",
         attributes: nft.attributes || [],
         isListed: false, // Will be updated when we check marketplace listings
         metadataUri: nft.metadataUri,

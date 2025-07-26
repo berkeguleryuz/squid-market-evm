@@ -20,9 +20,9 @@ export async function GET(
 ) {
   try {
     const { address } = await params;
-    
-    console.log('Scanning collection:', address);
-    
+
+    console.log("Scanning collection:", address);
+
     if (!address) {
       return NextResponse.json(
         { error: "Collection address parameter is required" },
@@ -31,25 +31,25 @@ export async function GET(
     }
 
     const collectionAddress = address as Address;
-    
+
     // Get collection basic info
     let collectionName = "Unknown Collection";
     let totalSupply = 0n;
-    
-    try {
-      collectionName = await publicClient.readContract({
-        address: collectionAddress,
-        abi: NFT_COLLECTION_ABI,
-        functionName: 'name',
-        args: [],
-      }) as string;
 
-      totalSupply = await publicClient.readContract({
+    try {
+      collectionName = (await publicClient.readContract({
         address: collectionAddress,
         abi: NFT_COLLECTION_ABI,
-        functionName: 'totalSupply',
+        functionName: "name",
         args: [],
-      }) as bigint;
+      })) as string;
+
+      totalSupply = (await publicClient.readContract({
+        address: collectionAddress,
+        abi: NFT_COLLECTION_ABI,
+        functionName: "totalSupply",
+        args: [],
+      })) as bigint;
     } catch (error) {
       console.error("Error getting collection info:", error);
       return NextResponse.json(
@@ -67,12 +67,12 @@ export async function GET(
         // Check if token exists
         let owner: Address;
         try {
-          owner = await publicClient.readContract({
+          owner = (await publicClient.readContract({
             address: collectionAddress,
             abi: NFT_COLLECTION_ABI,
-            functionName: 'ownerOf',
+            functionName: "ownerOf",
             args: [BigInt(tokenId)],
-          }) as Address;
+          })) as Address;
         } catch (error) {
           // Token doesn't exist or was burned
           continue;
@@ -83,44 +83,57 @@ export async function GET(
         let metadata = {
           name: `${collectionName} #${tokenId}`,
           description: "",
-          image: "/placeholder-nft.png",
+          image: "/placeholder.jpg",
           attributes: [],
         };
 
         try {
-          tokenURI = await publicClient.readContract({
+          tokenURI = (await publicClient.readContract({
             address: collectionAddress,
             abi: NFT_COLLECTION_ABI,
-            functionName: 'tokenURI',
+            functionName: "tokenURI",
             args: [BigInt(tokenId)],
-          }) as string;
+          })) as string;
 
           // Fetch metadata from IPFS or HTTP
-          if (tokenURI && (tokenURI.startsWith('http') || tokenURI.startsWith('ipfs://'))) {
+          if (
+            tokenURI &&
+            (tokenURI.startsWith("http") || tokenURI.startsWith("ipfs://"))
+          ) {
             let metadataUrl = tokenURI;
-            if (tokenURI.startsWith('ipfs://')) {
-              metadataUrl = tokenURI.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/');
+            if (tokenURI.startsWith("ipfs://")) {
+              metadataUrl = tokenURI.replace(
+                "ipfs://",
+                "https://gateway.pinata.cloud/ipfs/"
+              );
             }
 
             try {
               const metadataResponse = await fetch(metadataUrl);
-              
+
               if (metadataResponse.ok) {
                 const fetchedMetadata = await metadataResponse.json();
                 metadata = {
                   name: fetchedMetadata.name || metadata.name,
-                  description: fetchedMetadata.description || metadata.description,
+                  description:
+                    fetchedMetadata.description || metadata.description,
                   image: fetchedMetadata.image || metadata.image,
                   attributes: fetchedMetadata.attributes || metadata.attributes,
                 };
 
                 // Convert IPFS image URLs
-                if (metadata.image.startsWith('ipfs://')) {
-                  metadata.image = metadata.image.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/');
+                if (metadata.image.startsWith("ipfs://")) {
+                  metadata.image = metadata.image.replace(
+                    "ipfs://",
+                    "https://gateway.pinata.cloud/ipfs/"
+                  );
                 }
               }
             } catch (metadataError) {
-              console.error(`Error fetching metadata for token ${tokenId}:`, metadataError);
+              console.error(
+                `Error fetching metadata for token ${tokenId}:`,
+                metadataError
+              );
             }
           }
         } catch (error) {
@@ -128,7 +141,9 @@ export async function GET(
         }
 
         // Check if collection is verified (our own collections are verified)
-        const isVerified = collectionAddress.toLowerCase() === CONTRACT_ADDRESSES.NFT_COLLECTION.toLowerCase();
+        const isVerified =
+          collectionAddress.toLowerCase() ===
+          CONTRACT_ADDRESSES.NFT_COLLECTION.toLowerCase();
 
         // TODO: Check if NFT is listed on marketplace
         const isListed = false;
@@ -150,7 +165,6 @@ export async function GET(
           listingPrice: listingPrice?.toString(), // Convert BigInt to string if exists
           listingId: listingId?.toString(), // Convert BigInt to string if exists
         });
-
       } catch (error) {
         console.error(`Error processing token ${tokenId}:`, error);
         continue;
@@ -167,7 +181,6 @@ export async function GET(
       },
       tokens,
     });
-
   } catch (error) {
     console.error("Error scanning collection:", error);
     return NextResponse.json(

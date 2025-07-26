@@ -1,14 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount } from "wagmi";
 import {
   useConfigurePhase,
   usePhaseConfig,
 } from "@/lib/hooks/usePhaseManagement";
-import { useWriteContract } from "wagmi";
-import { getContractAddress } from "@/lib/wagmi";
-import { NFT_COLLECTION_ABI } from "@/lib/contracts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,8 +24,6 @@ import {
   DollarSign,
   Users,
   Target,
-  Package,
-  Play,
 } from "lucide-react";
 import { Address } from "viem";
 
@@ -45,9 +39,14 @@ const PHASES = {
   3: { name: "Public", color: "bg-green-500/20 text-green-400", icon: "🌍" },
 };
 
+interface LaunchData {
+  launchId: number;
+  [key: string]: unknown;
+}
+
 interface PhaseManagerProps {
   selectedCollection: Address | null;
-  selectedLaunch: any | null;
+  selectedLaunch: LaunchData | null;
   isLoading: string | null;
   onLoadingChange: (loading: string | null) => void;
 }
@@ -58,8 +57,6 @@ export default function PhaseManager({
   isLoading,
   onLoadingChange,
 }: PhaseManagerProps) {
-  const { address } = useAccount();
-
   // Phase configuration state
   const [phaseToConfig, setPhaseToConfig] = useState(1);
   const [isSelectedPhaseExpired, setIsSelectedPhaseExpired] = useState(false);
@@ -70,17 +67,25 @@ export default function PhaseManager({
   const [phaseMaxSupply, setPhaseMaxSupply] = useState("50");
 
   // Contract hooks
-  const { configurePhase } = useConfigurePhase();
-  const { writeContractAsync } = useWriteContract();
+  const { configurePhase, hash: configureHash } = useConfigurePhase();
   const { data: phaseConfigData, refetch: refetchPhaseConfig } = usePhaseConfig(
     selectedLaunch?.launchId ?? 0,
     phaseToConfig
   );
-  
+
   // Get phase config data for all phases to check expiration
-  const { data: presaleConfigData } = usePhaseConfig(selectedLaunch?.launchId ?? 0, 1);
-  const { data: whitelistConfigData } = usePhaseConfig(selectedLaunch?.launchId ?? 0, 2);
-  const { data: publicConfigData } = usePhaseConfig(selectedLaunch?.launchId ?? 0, 3);
+  const { data: presaleConfigData } = usePhaseConfig(
+    selectedLaunch?.launchId ?? 0,
+    1
+  );
+  const { data: whitelistConfigData } = usePhaseConfig(
+    selectedLaunch?.launchId ?? 0,
+    2
+  );
+  const { data: publicConfigData } = usePhaseConfig(
+    selectedLaunch?.launchId ?? 0,
+    3
+  );
 
   // Set default times
   useEffect(() => {
@@ -95,10 +100,9 @@ export default function PhaseManager({
   // Auto-refresh phase data when phase or collection changes
   useEffect(() => {
     if (selectedCollection && phaseToConfig) {
-      console.log(
-        `🔄 Auto-refreshing phase ${phaseToConfig} data for collection ${selectedCollection}`
-      );
-      setTimeout(() => refetchPhaseConfig(), 1000);
+      setTimeout(() => {
+        refetchPhaseConfig();
+      }, 1000);
     }
   }, [selectedCollection, phaseToConfig, refetchPhaseConfig]);
 
@@ -106,7 +110,7 @@ export default function PhaseManager({
   useEffect(() => {
     const now = Math.floor(Date.now() / 1000);
     let phaseData;
-    
+
     // Get the correct phase data for selected phase
     switch (phaseToConfig) {
       case 1:
@@ -121,14 +125,14 @@ export default function PhaseManager({
       default:
         phaseData = null;
     }
-    
+
     let isExpired = false;
     if (phaseData && Array.isArray(phaseData) && phaseData.length >= 7) {
       const isConfigured = phaseData[6];
       const endTime = Number(phaseData[2]);
       isExpired = isConfigured && endTime > 0 && endTime < now;
     }
-    
+
     setIsSelectedPhaseExpired(isExpired);
   }, [phaseToConfig, presaleConfigData, whitelistConfigData, publicConfigData]);
 
@@ -156,7 +160,7 @@ export default function PhaseManager({
   };
 
   const handleConfigurePhase = () =>
-    handleAction("Configure Phase", async () => {
+    handleAction("Configure Phase", async (): Promise<string> => {
       if (!selectedCollection) throw new Error("No collection selected");
 
       const startTimestamp = Math.floor(
@@ -177,47 +181,27 @@ export default function PhaseManager({
         throw new Error("Max per wallet must be greater than 0");
       }
 
-      console.log(
-        `🔧 Configuring ${
-          PHASES[phaseToConfig as keyof typeof PHASES]?.name
-        } phase for collection:`,
-        selectedCollection
-      );
-      console.log("⚙️ Phase config:", {
-        phase: phaseToConfig,
-        price: phasePrice,
-        startTime: new Date(startTimestamp * 1000).toLocaleString(),
-        endTime: new Date(endTimestamp * 1000).toLocaleString(),
-        maxPerWallet: parseInt(phaseMaxPerWallet),
-        maxSupply: parseInt(phaseMaxSupply),
-      });
+      // Configuration validation
+      const phaseName = PHASES[phaseToConfig as keyof typeof PHASES]?.name;
+      if (!phaseName) {
+        throw new Error("Invalid phase selected");
+      }
 
-      // Debug parameters before calling configurePhase
       if (!selectedLaunch?.launchId && selectedLaunch?.launchId !== 0) {
         throw new Error("No valid launch selected for phase configuration");
       }
-      
+
       const params = {
-        launchId: selectedLaunch.launchId, // Use exact launch ID, including 0
+        launchId: selectedLaunch.launchId,
         phase: phaseToConfig,
-        price: phasePrice.toString(), // Ensure price is always string
+        price: phasePrice.toString(),
         startTime: startTimestamp,
         endTime: endTimestamp,
         maxPerWallet: parseInt(phaseMaxPerWallet),
         maxSupply: parseInt(phaseMaxSupply),
       };
-      console.log("🔍 configurePhase parameters:", params);
-      console.log("🔍 Parameter types:", {
-        launchId: typeof params.launchId,
-        phase: typeof params.phase,
-        price: typeof params.price,
-        startTime: typeof params.startTime,
-        endTime: typeof params.endTime,
-        maxPerWallet: typeof params.maxPerWallet,
-        maxSupply: typeof params.maxSupply,
-      });
 
-      const hash = await configurePhase(
+      await configurePhase(
         params.launchId,
         params.phase,
         params.price,
@@ -226,13 +210,9 @@ export default function PhaseManager({
         params.maxPerWallet
       );
 
-      console.log("📝 Transaction hash:", hash);
       toast.info("⏳ Transaction submitted, waiting for confirmation...");
 
-      // The success toast will be shown by the transaction receipt handler
-      console.log("✅ Phase configuration transaction submitted successfully");
-
-      return hash;
+      return configureHash || "Transaction submitted";
     });
 
   if (!selectedCollection) {
@@ -249,7 +229,6 @@ export default function PhaseManager({
 
   return (
     <div className="space-y-6">
-      {/* Phase Configuration */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -258,7 +237,6 @@ export default function PhaseManager({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Phase Selection */}
           <div>
             <label className="block text-sm font-medium mb-2">Phase Type</label>
             <Select
@@ -272,12 +250,10 @@ export default function PhaseManager({
                 {Object.entries(PHASES)
                   .slice(1)
                   .map(([key, phase]) => {
-                    // Check if phase is expired
                     const now = Math.floor(Date.now() / 1000);
                     const phaseNum = parseInt(key);
                     let phaseData;
-                    
-                    // Get the correct phase data for each phase
+
                     switch (phaseNum) {
                       case 1:
                         phaseData = presaleConfigData;
@@ -291,28 +267,28 @@ export default function PhaseManager({
                       default:
                         phaseData = null;
                     }
-                    
+
                     let isExpired = false;
-                    
-                    // Only consider expired if phase is configured AND end time has passed
-                    if (phaseData && Array.isArray(phaseData) && phaseData.length >= 7) {
-                      const isConfigured = phaseData[6]; // isConfigured flag
+
+                    if (
+                      phaseData &&
+                      Array.isArray(phaseData) &&
+                      phaseData.length >= 7
+                    ) {
+                      const isConfigured = phaseData[6];
                       const endTime = Number(phaseData[2]);
-                      // Phase is expired only if it's configured AND end time has passed
                       isExpired = isConfigured && endTime > 0 && endTime < now;
                     }
-                    
+
                     return (
-                      <SelectItem 
-                        key={key} 
-                        value={key}
-                        disabled={isExpired}
-                      >
+                      <SelectItem key={key} value={key} disabled={isExpired}>
                         <div className="flex items-center gap-2">
                           <span>{phase.icon}</span>
                           <span>{phase.name}</span>
                           {isExpired && (
-                            <span className="text-xs text-red-500 ml-2">(Expired)</span>
+                            <span className="text-xs text-red-500 ml-2">
+                              (Expired)
+                            </span>
                           )}
                         </div>
                       </SelectItem>
@@ -322,7 +298,6 @@ export default function PhaseManager({
             </Select>
           </div>
 
-          {/* Phase Settings Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">
@@ -367,17 +342,25 @@ export default function PhaseManager({
             <div>
               <label className="block text-sm font-medium mb-2">
                 <Clock className="h-4 w-4 inline mr-1" />
-                {phaseToConfig === 1 ? "Presale Start" : phaseToConfig === 2 ? "Whitelist Start" : "Public Sale Start"}
+                {phaseToConfig === 1
+                  ? "Presale Start"
+                  : phaseToConfig === 2
+                  ? "Whitelist Start"
+                  : "Public Sale Start"}
               </label>
               <Input
                 type="datetime-local"
                 value={phaseStartTime}
                 onChange={(e) => {
                   setPhaseStartTime(e.target.value);
-                  // Auto-set end time to 24 hours later if not already set
-                  if (!phaseEndTime || new Date(phaseEndTime) <= new Date(e.target.value)) {
+                  if (
+                    !phaseEndTime ||
+                    new Date(phaseEndTime) <= new Date(e.target.value)
+                  ) {
                     const startDate = new Date(e.target.value);
-                    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000);
+                    const endDate = new Date(
+                      startDate.getTime() + 24 * 60 * 60 * 1000
+                    );
                     setPhaseEndTime(endDate.toISOString().slice(0, 16));
                   }
                 }}
@@ -387,7 +370,11 @@ export default function PhaseManager({
             <div>
               <label className="block text-sm font-medium mb-2">
                 <Clock className="h-4 w-4 inline mr-1" />
-                {phaseToConfig === 1 ? "Presale End" : phaseToConfig === 2 ? "Whitelist End" : "Public Sale End"}
+                {phaseToConfig === 1
+                  ? "Presale End"
+                  : phaseToConfig === 2
+                  ? "Whitelist End"
+                  : "Public Sale End"}
               </label>
               <Input
                 type="datetime-local"
@@ -396,26 +383,47 @@ export default function PhaseManager({
                 min={phaseStartTime}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Phase duration: {phaseStartTime && phaseEndTime ? 
-                  `${Math.round((new Date(phaseEndTime).getTime() - new Date(phaseStartTime).getTime()) / (1000 * 60 * 60))} hours` : 
-                  'Set start and end times'
-                }
+                Phase duration:{" "}
+                {phaseStartTime && phaseEndTime
+                  ? `${Math.round(
+                      (new Date(phaseEndTime).getTime() -
+                        new Date(phaseStartTime).getTime()) /
+                        (1000 * 60 * 60)
+                    )} hours`
+                  : "Set start and end times"}
               </p>
             </div>
           </div>
 
-          {/* Phase Status Information */}
           <div className="bg-muted/50 p-4 rounded-lg">
             <h4 className="font-medium mb-2">Phase Status</h4>
             <div className="text-sm text-muted-foreground space-y-1">
-              {phaseConfigData && Array.isArray(phaseConfigData) && phaseConfigData.length >= 7 ? (
+              {phaseConfigData &&
+              Array.isArray(phaseConfigData) &&
+              phaseConfigData.length >= 7 ? (
                 <>
-                  <p>Current Price: {(Number(phaseConfigData[0]) / 1e18).toFixed(4)} ETH</p>
-                  <p>Start Time: {new Date(Number(phaseConfigData[1]) * 1000).toLocaleString()}</p>
-                  <p>End Time: {new Date(Number(phaseConfigData[2]) * 1000).toLocaleString()}</p>
+                  <p>
+                    Current Price:{" "}
+                    {(Number(phaseConfigData[0]) / 1e18).toFixed(4)} ETH
+                  </p>
+                  <p>
+                    Start Time:{" "}
+                    {new Date(
+                      Number(phaseConfigData[1]) * 1000
+                    ).toLocaleString()}
+                  </p>
+                  <p>
+                    End Time:{" "}
+                    {new Date(
+                      Number(phaseConfigData[2]) * 1000
+                    ).toLocaleString()}
+                  </p>
                   <p>Max Per Wallet: {phaseConfigData[3]?.toString()}</p>
                   <p>Max Supply: {phaseConfigData[4]?.toString()}</p>
-                  <p>Status: {phaseConfigData[6] ? '✅ Configured' : '❌ Not Configured'}</p>
+                  <p>
+                    Status:{" "}
+                    {phaseConfigData[6] ? "✅ Configured" : "❌ Not Configured"}
+                  </p>
                 </>
               ) : (
                 <p>Phase not configured yet</p>
@@ -441,14 +449,16 @@ export default function PhaseManager({
             ) : (
               <>
                 <Settings className="h-4 w-4 mr-2" />
-                Configure {PHASES[phaseToConfig as keyof typeof PHASES]?.name} Phase
+                Configure {
+                  PHASES[phaseToConfig as keyof typeof PHASES]?.name
+                }{" "}
+                Phase
               </>
             )}
           </Button>
         </CardContent>
       </Card>
 
-      {/* Current Phase Info */}
       {phaseConfigData && (
         <Card>
           <CardHeader>

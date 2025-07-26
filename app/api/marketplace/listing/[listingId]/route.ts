@@ -65,7 +65,7 @@ export async function GET(
     let nftMetadata = {
       name: `NFT #${tokenId}`,
       description: "",
-      image: "/placeholder-nft.png",
+      image: "/placeholder.jpg",
       attributes: [],
     };
 

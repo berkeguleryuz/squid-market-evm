@@ -215,14 +215,14 @@ export default function MarketplacePage() {
                 >
                   <div className="relative">
                     <Image
-                      src={collection.image || "/placeholder-nft.png"}
+                      src={collection.image || "/placeholder.jpg"}
                       alt={collection.name}
                       width={400}
                       height={400}
                       className="w-full h-64 object-cover"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.src = "/placeholder-nft.png";
+                        target.src = "/placeholder.jpg";
                       }}
                     />
                     {collection.verified && (

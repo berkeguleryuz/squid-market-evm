@@ -59,7 +59,7 @@ export function NFTCard({ nft, onListClick, onBuyClick, onViewDetails, showOwner
           className="w-full h-64 object-cover"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            target.src = "/placeholder-nft.png";
+            target.src = "/placeholder.jpg";
           }}
         />
         {nft.isVerified && (

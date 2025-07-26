@@ -1,6 +1,5 @@
 import { Address } from "viem";
 
-// Contract ABIs (simplified versions for frontend use)
 export const LAUNCHPAD_ABI = [
   {
     inputs: [
@@ -568,183 +567,182 @@ export const LAUNCHPAD_ABI = [
   },
 ] as const;
 
-// Real Marketplace ABI with listItem and buyItem functions
 export const MARKETPLACE_ABI = [
   {
     inputs: [
       {
         internalType: "address",
         name: "initialOwner",
-        type: "address"
+        type: "address",
       },
       {
         internalType: "address payable",
         name: "_feeRecipient",
-        type: "address"
-      }
+        type: "address",
+      },
     ],
     stateMutability: "nonpayable",
-    type: "constructor"
+    type: "constructor",
   },
   {
     inputs: [
       {
         internalType: "address",
         name: "_collection",
-        type: "address"
+        type: "address",
       },
       {
         internalType: "uint256",
         name: "_tokenId",
-        type: "uint256"
+        type: "uint256",
       },
       {
         internalType: "uint256",
         name: "_price",
-        type: "uint256"
+        type: "uint256",
       },
       {
         internalType: "enum Marketplace.ListingType",
         name: "_listingType",
-        type: "uint8"
+        type: "uint8",
       },
       {
         internalType: "uint256",
         name: "_auctionDuration",
-        type: "uint256"
-      }
+        type: "uint256",
+      },
     ],
     name: "listItem",
     outputs: [
       {
         internalType: "uint256",
         name: "listingId",
-        type: "uint256"
-      }
+        type: "uint256",
+      },
     ],
     stateMutability: "nonpayable",
-    type: "function"
+    type: "function",
   },
   {
     inputs: [
       {
         internalType: "uint256",
         name: "_listingId",
-        type: "uint256"
-      }
+        type: "uint256",
+      },
     ],
     name: "buyItem",
     outputs: [],
     stateMutability: "payable",
-    type: "function"
+    type: "function",
   },
   {
     inputs: [
       {
         internalType: "address",
         name: "",
-        type: "address"
+        type: "address",
       },
       {
         internalType: "uint256",
         name: "",
-        type: "uint256"
-      }
+        type: "uint256",
+      },
     ],
     name: "tokenToListing",
     outputs: [
       {
         internalType: "uint256",
         name: "",
-        type: "uint256"
-      }
+        type: "uint256",
+      },
     ],
     stateMutability: "view",
-    type: "function"
+    type: "function",
   },
   {
     inputs: [
       {
         internalType: "uint256",
         name: "",
-        type: "uint256"
-      }
+        type: "uint256",
+      },
     ],
     name: "listings",
     outputs: [
       {
         internalType: "uint256",
         name: "listingId",
-        type: "uint256"
+        type: "uint256",
       },
       {
         internalType: "address",
         name: "collection",
-        type: "address"
+        type: "address",
       },
       {
         internalType: "uint256",
         name: "tokenId",
-        type: "uint256"
+        type: "uint256",
       },
       {
         internalType: "address payable",
         name: "seller",
-        type: "address"
+        type: "address",
       },
       {
         internalType: "uint256",
         name: "price",
-        type: "uint256"
+        type: "uint256",
       },
       {
         internalType: "enum Marketplace.ListingType",
         name: "listingType",
-        type: "uint8"
+        type: "uint8",
       },
       {
         internalType: "enum Marketplace.ListingStatus",
         name: "status",
-        type: "uint8"
+        type: "uint8",
       },
       {
         internalType: "uint256",
         name: "createdAt",
-        type: "uint256"
+        type: "uint256",
       },
       {
         internalType: "uint256",
         name: "endTime",
-        type: "uint256"
+        type: "uint256",
       },
       {
         internalType: "address",
         name: "highestBidder",
-        type: "address"
+        type: "address",
       },
       {
         internalType: "uint256",
         name: "highestBid",
-        type: "uint256"
+        type: "uint256",
       },
       {
         internalType: "bool",
         name: "hasRoyalty",
-        type: "bool"
+        type: "bool",
       },
       {
         internalType: "uint256",
         name: "royaltyAmount",
-        type: "uint256"
+        type: "uint256",
       },
       {
         internalType: "address",
         name: "royaltyRecipient",
-        type: "address"
-      }
+        type: "address",
+      },
     ],
     stateMutability: "view",
-    type: "function"
+    type: "function",
   },
   {
     inputs: [],
@@ -2455,14 +2453,12 @@ export const NFT_COLLECTION_ABI = [
   },
 ] as const;
 
-// Contract addresses type
 export interface ContractAddresses {
   LAUNCHPAD: Address;
   MARKETPLACE: Address;
   PAYMENT_HANDLER: Address;
 }
 
-// Type definitions
 export interface LaunchInfo {
   collection: Address;
   creator: Address;
@@ -2501,7 +2497,6 @@ export interface CollectionInfo {
   createdAt: bigint;
 }
 
-// Enums
 export enum LaunchStatus {
   PENDING = 0,
   ACTIVE = 1,
@@ -2527,7 +2522,6 @@ export enum ListingType {
   AUCTION = 1,
 }
 
-// Helper functions
 export const formatPrice = (price: bigint): string => {
   return (Number(price) / 1e18).toFixed(4);
 };

@@ -169,7 +169,7 @@ export default function NFTDetailPage() {
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = "/placeholder-nft.png";
+                  target.src = "/placeholder.jpg";
                 }}
               />
             ) : (

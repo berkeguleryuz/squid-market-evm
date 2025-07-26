@@ -1,20 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Menu,
-  X,
-  Wallet,
-  Search,
-  User,
-  Settings,
-  ChevronDown,
-  ExternalLink,
-} from "lucide-react";
+import { Menu, X, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAccount } from "wagmi";
 
 const navigation = [
@@ -100,10 +92,8 @@ export function Header() {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* Search */}
-            <button className="p-2 text-white/60 hover:text-white transition-colors">
-              <Search className="h-5 w-5" />
-            </button>
+            {/* Theme Toggle */}
+            <ThemeToggle />
 
             {/* Wallet Connect */}
             <div className="flex items-center space-x-3">

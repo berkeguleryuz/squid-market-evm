@@ -10,17 +10,16 @@ export interface KnownCollection {
 }
 
 export const KNOWN_COLLECTIONS: KnownCollection[] = [
-  // Our Launchpad Collections - Only verified collections
   {
     address: "0xE4Ee962f37A4C305c3F8Abf4F5ceC2347fd87A03",
     name: "BG Test",
     symbol: "BGTEST",
     type: "ERC721",
     verified: true,
-    description: "Test collection from our launchpad",
-    image: "https://gateway.pinata.cloud/ipfs/QmTsP6tHg2Lde4t6t2gidNLKmvDhvHb4cH2KCMyju3g5rM", // Real IPFS image from first NFT
+    description: "Our Launchpad Collection",
+    image:
+      "https://gateway.pinata.cloud/ipfs/QmTsP6tHg2Lde4t6t2gidNLKmvDhvHb4cH2KCMyju3g5rM",
   },
-  // All unverified collections removed to prevent display in marketplace
 ];
 
 // Get collection by address

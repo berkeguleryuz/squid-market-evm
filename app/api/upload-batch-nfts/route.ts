@@ -136,27 +136,53 @@ export async function POST(request: NextRequest) {
               });
               imageFormData.append("pinataMetadata", imagePinataMetadata);
 
-              // Upload image to IPFS
-              const imageUploadResponse = await fetch(
-                "https://api.pinata.cloud/pinning/pinFileToIPFS",
-                {
-                  method: "POST",
-                  headers: {
-                    Authorization: `Bearer ${pinataJWT}`,
-                  },
-                  body: imageFormData,
+              // Upload image to IPFS with retry logic for 429 errors
+              const uploadImageToPinata = async (retryCount = 0): Promise<{ IpfsHash: string; [key: string]: any }> => {
+                const response = await fetch(
+                  "https://api.pinata.cloud/pinning/pinFileToIPFS",
+                  {
+                    method: "POST",
+                    headers: {
+                      Authorization: `Bearer ${pinataJWT}`,
+                    },
+                    body: imageFormData,
+                  }
+                );
+
+                const result = await response.json();
+
+                // Handle 429 (Rate Limit) errors with retry
+                if (response.status === 429) {
+                  const maxRetries = 10;
+                  const baseDelay = 1000;
+                  const backoffMultiplier = 2;
+                  
+                  if (retryCount < maxRetries) {
+                    const delay = baseDelay * Math.pow(backoffMultiplier, retryCount);
+                    console.warn(`⚠️ Pinata rate limit hit for NFT ${i + 1} image (429), retrying in ${delay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
+                    
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return uploadImageToPinata(retryCount + 1);
+                  } else {
+                    throw new Error(`Pinata rate limit exceeded for NFT ${i + 1} image after ${maxRetries} attempts`);
+                  }
                 }
-              );
 
-              const imageResult = await imageUploadResponse.json();
+                if (!response.ok) {
+                  throw new Error(result.error?.details || `Image upload failed for NFT ${i + 1} with status ${response.status}`);
+                }
 
-              if (imageUploadResponse.ok) {
+                return result;
+              };
+
+              try {
+                const imageResult = await uploadImageToPinata();
                 imageUrl = `https://gateway.pinata.cloud/ipfs/${imageResult.IpfsHash}`;
                 console.log(`✅ Image uploaded for NFT ${i + 1}: ${imageUrl}`);
-              } else {
+              } catch (uploadError) {
                 console.error(
                   `❌ Failed to upload image for NFT ${i + 1}:`,
-                  imageResult
+                  uploadError
                 );
                 // Keep original URL as fallback
               }
@@ -203,22 +229,46 @@ export async function POST(request: NextRequest) {
           });
           formData.append("pinataMetadata", pinataMetadata);
 
-          const response = await fetch(
-            "https://api.pinata.cloud/pinning/pinFileToIPFS",
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${pinataJWT}`,
-              },
-              body: formData,
+          // Upload metadata to IPFS with retry logic for 429 errors
+          const uploadMetadataToPinata = async (retryCount = 0): Promise<{ IpfsHash: string; [key: string]: any }> => {
+            const response = await fetch(
+              "https://api.pinata.cloud/pinning/pinFileToIPFS",
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${pinataJWT}`,
+                },
+                body: formData,
+              }
+            );
+
+            const result = await response.json();
+
+            // Handle 429 (Rate Limit) errors with retry
+            if (response.status === 429) {
+              const maxRetries = 10;
+              const baseDelay = 1000;
+              const backoffMultiplier = 2;
+              
+              if (retryCount < maxRetries) {
+                const delay = baseDelay * Math.pow(backoffMultiplier, retryCount);
+                console.warn(`⚠️ Pinata rate limit hit for NFT ${i + 1} metadata (429), retrying in ${delay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return uploadMetadataToPinata(retryCount + 1);
+              } else {
+                throw new Error(`Pinata rate limit exceeded for NFT ${i + 1} metadata after ${maxRetries} attempts`);
+              }
             }
-          );
 
-          const result = await response.json();
+            if (!response.ok) {
+              throw new Error(result.error?.details || `Metadata upload failed for NFT ${i + 1} with status ${response.status}`);
+            }
 
-          if (!response.ok) {
-            throw new Error(result.error?.details || "Pinata upload failed");
-          }
+            return result;
+          };
+
+          const result = await uploadMetadataToPinata();
 
           const metadataUri = `https://gateway.pinata.cloud/ipfs/${result.IpfsHash}`;
 

@@ -177,7 +177,7 @@ export function ListNFTDialog({ isOpen, onClose, nft, onSuccess }: ListNFTDialog
               className="w-16 h-16 rounded-lg object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                target.src = "/placeholder-nft.png";
+                target.src = "/placeholder.jpg";
               }}
             />
             <div>

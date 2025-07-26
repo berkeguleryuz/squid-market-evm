@@ -52,46 +52,74 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Upload to Pinata IPFS
-    const pinataFormData = new FormData();
-    pinataFormData.append("file", file);
+    // Upload to Pinata IPFS with retry logic for 429 errors
+    const uploadToPinata = async (retryCount = 0): Promise<{ IpfsHash: string; [key: string]: any }> => {
+      const pinataFormData = new FormData();
+      pinataFormData.append("file", file);
 
-    const metadata = JSON.stringify({
-      name: file.name,
-      keyvalues: {
-        uploadedAt: new Date().toISOString(),
-        type: "nft-collection-cover",
-      },
-    });
-    pinataFormData.append("pinataMetadata", metadata);
-
-    const pinataOptions = JSON.stringify({
-      cidVersion: 0,
-    });
-    pinataFormData.append("pinataOptions", pinataOptions);
-
-    const response = await fetch(
-      "https://api.pinata.cloud/pinning/pinFileToIPFS",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${pinataJWT}`,
+      const metadata = JSON.stringify({
+        name: file.name,
+        keyvalues: {
+          uploadedAt: new Date().toISOString(),
+          type: "nft-collection-cover",
         },
-        body: pinataFormData,
+      });
+      pinataFormData.append("pinataMetadata", metadata);
+
+      const pinataOptions = JSON.stringify({
+        cidVersion: 0,
+      });
+      pinataFormData.append("pinataOptions", pinataOptions);
+
+      const response = await fetch(
+        "https://api.pinata.cloud/pinning/pinFileToIPFS",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${pinataJWT}`,
+          },
+          body: pinataFormData,
+        }
+      );
+
+      const result = await response.json();
+
+      // Handle 429 (Rate Limit) errors with retry
+      if (response.status === 429) {
+        const maxRetries = 10; // Maximum retry attempts
+        const baseDelay = 1000; // Base delay in milliseconds
+        const backoffMultiplier = 2; // Exponential backoff multiplier
+        
+        if (retryCount < maxRetries) {
+          const delay = baseDelay * Math.pow(backoffMultiplier, retryCount);
+          console.warn(`⚠️ Pinata rate limit hit (429), retrying in ${delay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
+          
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, delay));
+          
+          // Recursive retry
+          return uploadToPinata(retryCount + 1);
+        } else {
+          throw new Error(`Pinata rate limit exceeded after ${maxRetries} attempts`);
+        }
       }
-    );
 
-    const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error?.details || `Pinata upload failed with status ${response.status}`);
+      }
 
-    if (!response.ok) {
-      throw new Error(result.error?.details || "Pinata upload failed");
-    }
+      return result;
+    };
+
+    const result = await uploadToPinata();
 
     const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${result.IpfsHash}`;
 
-    console.log("✅ Image uploaded to IPFS:", {
+    console.log("✅ Image uploaded to IPFS successfully:", {
       hash: result.IpfsHash,
       url: ipfsUrl,
+      fileName: file.name,
+      fileSize: file.size,
     });
 
     return NextResponse.json({

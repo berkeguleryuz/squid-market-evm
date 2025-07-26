@@ -42,24 +42,9 @@ export async function POST(request: NextRequest) {
       autoProgress = false,
     } = body;
 
-    // Debug logging
-    console.log("🔍 API Request Body:", {
-      launchId,
-      contractAddress,
-      launchpadAddress,
-      name,
-      symbol,
-      description,
-      imageUri,
-      maxSupply,
-      creator,
-      status,
-      autoProgress,
-    });
-
-    // Validate required fields
     if (
-      launchId === undefined || launchId === null ||
+      launchId === undefined ||
+      launchId === null ||
       !contractAddress ||
       !launchpadAddress ||
       !name ||
@@ -90,7 +75,7 @@ export async function POST(request: NextRequest) {
         name,
         symbol,
         description: description || `${name} NFT Collection`,
-        imageUri: imageUri || "https://via.placeholder.com/400x400?text=NFT",
+        imageUrl: imageUri || "https://via.placeholder.com/400x400?text=NFT",
         maxSupply: parseInt(maxSupply),
         creator,
         status,

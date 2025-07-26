@@ -100,17 +100,7 @@ export default function LaunchManagerNew({
 
   const { launch: selectedLaunchData, refetch: refetchSelectedLaunch } =
     useDatabaseLaunch(selectedLaunch);
-
-  // Debug logging
-  console.log("🔍 LaunchManagerNew - Database Debug:", {
-    address,
-    databaseLaunches,
-    isLoadingDatabaseLaunches,
-    databaseLaunchesError,
-    selectedLaunch,
-    selectedLaunchData,
-  });
-
+    
   // Auto-select first launch if available
   useEffect(() => {
     if (

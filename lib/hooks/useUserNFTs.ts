@@ -128,7 +128,7 @@ export function useUserNFTs() {
         collectionName: metadata.collectionName || "Unknown Collection",
         name: metadata.name || `NFT #${tokenId}`,
         description: metadata.description || "",
-        image: metadata.image || "/placeholder-nft.png",
+        image: metadata.image || "/placeholder.jpg",
         attributes: metadata.attributes || [],
         isListed: false, // Will be updated when we check marketplace
         metadataUri: metadata.metadataUri,

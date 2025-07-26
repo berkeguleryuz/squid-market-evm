@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Exo_2, Rajdhani } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/header";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,12 +40,20 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`bg-black text-white ${geistSans.variable} ${geistMono.variable} ${exo2.variable} ${rajdhani.variable} antialiased`}
-        suppressHydrationWarning>
-        <Providers>
-          <Header />
-          {children}
-        </Providers>
+        className={`dark:bg-dark bg-light ${geistSans.variable} ${geistMono.variable} ${exo2.variable} ${rajdhani.variable} antialiased`}
+        suppressHydrationWarning
+      >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Providers>
+            <Header />
+            {children}
+          </Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

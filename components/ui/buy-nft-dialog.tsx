@@ -99,7 +99,7 @@ export function BuyNFTDialog({ isOpen, onClose, nft, onSuccess }: BuyNFTDialogPr
               className="w-16 h-16 rounded-lg object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                target.src = "/placeholder-nft.png";
+                target.src = "/placeholder.jpg";
               }}
             />
             <div className="flex-1">

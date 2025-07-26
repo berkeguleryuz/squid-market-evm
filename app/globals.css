@@ -6,6 +6,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-dark: #0f0d0d;
+  --color-darkHeader: #ebf9bf;
+  --color-light: #fbfbf8;
+  --color-lightHeader: #181316;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-exo2: var(--font-exo2);

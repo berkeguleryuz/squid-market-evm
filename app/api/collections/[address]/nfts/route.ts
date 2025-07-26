@@ -98,7 +98,7 @@ async function getCachedNFTs(collectionAddress: string): Promise<CachedNFT[]> {
       tokenId: nft.tokenId.toString(),
       name: nft.name || `NFT #${nft.tokenId}`,
       description: nft.description || undefined,
-      image: nft.image || '/placeholder-nft.png',
+      image: nft.image || '/placeholder.jpg',
       owner: nft.owner || '',
       collectionAddress: nft.collectionAddress,
       cached: true
@@ -152,7 +152,7 @@ async function fetchLiveNFTs(collectionAddress: string, offset: number = 0, limi
             tokenId: tokenId.toString(),
             name: metadata?.name || `NFT #${tokenId}`,
             description: metadata?.description,
-            image: metadata?.image || '/placeholder-nft.png',
+            image: metadata?.image || '/placeholder.jpg',
             owner: owner.toLowerCase(),
             collectionAddress: collectionAddress.toLowerCase(),
             cached: false
@@ -210,7 +210,7 @@ async function fetchLiveNFTs(collectionAddress: string, offset: number = 0, limi
             tokenId: tokenId.toString(),
             name: metadata?.name || `NFT #${tokenId}`,
             description: metadata?.description,
-            image: metadata?.image || '/placeholder-nft.png',
+            image: metadata?.image || '/placeholder.jpg',
             owner: owner.toLowerCase(),
             collectionAddress: collectionAddress.toLowerCase(),
             cached: false
